@@ -267,7 +267,8 @@ app.get('/api/paymentMethods/', function(req, res){
 
 
 app.get('/api/userPreferences/', function(req, res){
-  rmysql.query('SELECT AES_DECRYPT(u.email,"oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") AS address,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields){
+  rmysql.query('SELECT AES_DECRYPT(u.email,"' + salt + '") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"' + salt + '") AS address,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields){
+  console.log('SELECT AES_DECRYPT(u.email,"' + salt + '") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"' + salt + '") AS address,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"');
   if (err) {
     res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
   } else {
@@ -343,12 +344,12 @@ app.post('/api/userSignup/', function(req, res){
       }
       else {
 	console.log(data);
-        wmysql.query('SELECT email FROM users WHERE email = AES_ENCRYPT("' + data.profile.email + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$")', function(err, result, fields) {
+        wmysql.query('SELECT email FROM users WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
 	console.log(result);
           require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
             if(result.length < 1) {
-              wmysql.query('INSERT INTO users (email,first_name,last_name,' + req.body.ltype + '_token,created,lastlogin) VALUES (AES_ENCRYPT("' + data.profile.email + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$"),"' + data.profile.name.givenName + '","' + data.profile.name.familyName + '","' + token + '",NOW(),NOW())', function(err, result, fields) {
+              wmysql.query('INSERT INTO users (email,first_name,last_name,' + req.body.ltype + '_token,created,lastlogin) VALUES (AES_ENCRYPT("' + data.profile.email + '","' + salt + '"),"' + data.profile.name.givenName + '","' + data.profile.name.familyName + '","' + token + '",NOW(),NOW())', function(err, result, fields) {
               if (err) {
                 res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
               } else {
@@ -363,7 +364,7 @@ app.post('/api/userSignup/', function(req, res){
             });
       } else {
 	  console.log(req.body.ltype);
-          wmysql.query('UPDATE users SET ' + req.body.ltype + '_token = "' + token + '", lastlogin = NOW() WHERE email = AES_ENCRYPT("' + data.profile.email + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$")', function(err, result, fields) {
+          wmysql.query('UPDATE users SET ' + req.body.ltype + '_token = "' + token + '", lastlogin = NOW() WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
           if (err) {
             res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
           } else {
@@ -414,7 +415,7 @@ app.post('/api/gymLogin/', function(req, res){
 
 
 app.post('/api/updateUserPreferences/', function(req, res){
-  wmysql.query('UPDATE users SET email = AES_ENCRYPT("' + req.body.email + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$"), first_name = "' + req.body.first_name + '", last_name = "' + req.body.last_name + '", address = AES_ENCRYPT("' + req.body.address + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$"), city = "' + req.body.city + '", state = "' + req.body.state + '", zipcode = "' + req.body.zipcode + '", rate = "' + req.body.rate + '" WHERE ' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE users SET email = AES_ENCRYPT("' + req.body.email + '","' + salt + '"), first_name = "' + req.body.first_name + '", last_name = "' + req.body.last_name + '", address = AES_ENCRYPT("' + req.body.address + '","' + salt + '"), city = "' + req.body.city + '", state = "' + req.body.state + '", zipcode = "' + req.body.zipcode + '", rate = "' + req.body.rate + '" WHERE ' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err) { 
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
