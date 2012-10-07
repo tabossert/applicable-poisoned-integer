@@ -1,0 +1,18 @@
+{
+  "name": "zunefit-api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app"
+  },
+  "dependencies": {
+    "express": "3.0.0alpha2",
+    "connect": "2.2.0", 
+    "jade": "*",
+    "mysql": "0.9.5",
+    "mongoose": "2.6.0",
+    "janrain-api": "0.0.1",
+    "geo": "0.0.3",
+    "forever": "0.8.5" 
+  }
+}
