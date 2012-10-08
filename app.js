@@ -631,30 +631,30 @@ app.post('/api/deleteGymUser/', function(req, res){
 
 app.post('/api/updateGym/', function(req, res){
   wmysql.query('UPDATE gyms set name = "' + req.body.name + '",address = "' + req.body.address + '",city = "' + req.body.city + '",state = "' + req.body.state + '",zipcode = "' + req.body.zipcode + '",phone = "' + req.body.phone + '",email = "' + req.body.email + '",contact = "' + req.body.contact + '" WHERE id IN (SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '")', function(err, result, fields) {
-    if (err) {
-      res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
-    } else {
-      wmysql.query('UPDATE hours set monday = "' + req.body.monday + '",tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '",thursday = "' + req.body.thursday + '",friday = "' + req.body.friday + '",saturday = "' + req.body.saturday + '",sunday = "' + req.body.sunday + '" WHERE gymid IN (SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '")', function(err, result, fields) {
       if (err) {
         res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
       } else {
-        geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
-	  cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
-	    if(!p)
-	      res.send('{"status": "failed", "message":"No Document Found"}');  
-	    else { 
-	      console.log(lat);
-	      console.log(lng);
-	      p.loc.lat = lat;
-	      p.loc.lng = lng;
+        wmysql.query('UPDATE hours set monday = "' + req.body.monday + '",tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '",thursday = "' + req.body.thursday + '",friday = "' + req.body.friday + '",saturday = "' + req.body.saturday + '",sunday = "' + req.body.sunday + '" WHERE gymid IN (SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '")', function(err, result, fields) {
+          if (err) {
+            res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+          } else {
+            geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
+	             cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
+	               if(!p)
+	                 res.send('{"status": "failed", "message":"No Document Found"}');  
+	               else { 
+	                 console.log(lat);
+	                 console.log(lng);
+	                 p.loc.lat = lat;
+	                 p.loc.lng = lng;
 	    
-	    p.save(function(err) {
-	      if(err)
-	        res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
-	      else
-	        res.send('{"status": "success"}');
-              });
-	     }
+	                 p.save(function(err) {
+	                   if(err) 
+	                     res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+	                   else
+	                     res.send('{"status": "success"}');
+                });
+	            }
            });
          });
         }
