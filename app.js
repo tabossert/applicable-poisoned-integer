@@ -210,7 +210,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
 app.get('/api/featuredGyms/', function(req, res){
   rmysql.query('SELECT name,address,city,state,zipcode,phone,email FROM gyms WHERE featured = true', function(err, result, fields) {
     if (err) {
-     res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+     res.send('{"status": "failed", "message":"Already applied"}');
     } else {
       res.send(result);
     }
