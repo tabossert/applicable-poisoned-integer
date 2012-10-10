@@ -763,7 +763,7 @@ app.post('/api/newReward/', function(req, res) {
   if(req.body.network == 'facebook' || req.body.network == 'twitter') {
     rmysql.query('INSERT INTO rewards (userid,network,timestamp) VALUES(' + req.body.uid + ',"' + req.body.network + '",NOW())', function(err, result, fields) {
       if(err) {
-        res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+        res.send('{"status": "failed", "message":"Already Applied"}');
       } else {
         res.send('{"status": "success"}');
       }
