@@ -758,5 +758,17 @@ app.post('/api/getTransaction/', function(req, res) {
   });
 });
 
+
+app.post('/api/newReward/', function(req, res) {
+  rmysql.query('INSERT INTO rewards (userid,network,timestamp) VALUES(' + req.body.uid + ',"' + req.body.network + '",NOW())', function(err, result, fields) {
+    if(err) {
+      res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+    } else {
+      res.send('{"status": "success"}');
+    }
+  });
+});
+
+
 http.createServer(app).listen(3005);
 console.log("started server on 3005");
