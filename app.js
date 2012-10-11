@@ -75,7 +75,28 @@ var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
 
 var app = express();
 
+
+app.use(express.methodOverride());
+
+ // ## CORS middleware
+ // 
+ // see: http://stackoverflow.com/questions/7067966/how-to-allow-cors-in-express-nodejs
+ var allowCrossDomain = function(req, res, next) {
+     res.header('Access-Control-Allow-Origin', '*');
+     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, token, ltype');      
+     // intercept OPTIONS method
+     if ('OPTIONS' == req.method) {
+       res.send(200);
+     }
+     else {
+       next();
+     }
+ };
+ app.use(allowCrossDomain);
+
 app.configure(function(){
+  app.use(allowCrossDomain);
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
   app.use(express.favicon());
@@ -89,6 +110,7 @@ app.configure(function(){
 app.configure('development', function(){
   app.use(express.errorHandler());
 });
+
 
 
 app.get('/', function(req, res){
@@ -403,6 +425,7 @@ app.post('/api/userSignout/', function(req, res){
 
 
 app.post('/api/gymLogin/', function(req, res){
+  console.log("test");
   rmysql.query('SELECT gu.gymid,g.name FROM gymUsers gu INNER JOIN gyms g ON gu.gymid = g.id WHERE gu.username = "' + req.body.username + '" AND gu.password = "' + req.body.password + '"', function(err, result, fields) {
     if(result.length > 0){
       var gymid = result[0].gymid;
@@ -419,7 +442,7 @@ app.post('/api/gymLogin/', function(req, res){
 	});
       });
     } else {
-      res.send('[{"status": "failed", "message":"' + res.send(err) + '"}]');
+      res.send('[{"status": "failed", "message":"failed"}]');
      }
    });
 });
@@ -774,5 +797,5 @@ app.post('/api/newReward/', function(req, res) {
 });
 
 
-http.createServer(app).listen(3005);
-console.log("started server on 3005");
+http.createServer(app).listen(80);
+console.log("started server on 80");
