@@ -4,10 +4,12 @@
  */
 
 var express = require('express')
+  , crypto = require('crypto')
   , fs = require("fs")
   , path = require("path")
   , routes = require('./routes')
   , http = require('http')
+  , https = require('https')
   , _mysql = require('mysql')
   , moment = require('moment')
   , mongoose = require("mongoose")
@@ -73,14 +75,11 @@ var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
 
 
 
-var app = express();
+//var app = express();
 
 
-app.use(express.methodOverride());
 
  // ## CORS middleware
- // 
- // see: http://stackoverflow.com/questions/7067966/how-to-allow-cors-in-express-nodejs
  var allowCrossDomain = function(req, res, next) {
      res.header('Access-Control-Allow-Origin', '*');
      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
@@ -93,7 +92,16 @@ app.use(express.methodOverride());
        next();
      }
  };
- app.use(allowCrossDomain);
+
+
+var options = {
+  key: fs.readFileSync('ssl/api_zunefit.key'),
+  ca: fs.readFileSync('ssl/api_zunefit_com.ca-bundle'),
+  cert: fs.readFileSync('ssl/api_zunefit_com.crt'),
+  requestCert: true,
+}
+
+var app = module.exports = express.createServer();
 
 app.configure(function(){
   app.use(allowCrossDomain);
@@ -425,7 +433,6 @@ app.post('/api/userSignout/', function(req, res){
 
 
 app.post('/api/gymLogin/', function(req, res){
-  console.log("test");
   rmysql.query('SELECT gu.gymid,g.name FROM gymUsers gu INNER JOIN gyms g ON gu.gymid = g.id WHERE gu.username = "' + req.body.username + '" AND gu.password = "' + req.body.password + '"', function(err, result, fields) {
     if(result.length > 0){
       var gymid = result[0].gymid;
@@ -799,3 +806,7 @@ app.post('/api/newReward/', function(req, res) {
 
 http.createServer(app).listen(80);
 console.log("started server on 80");
+
+https.createServer(options, app).listen(443);
+console.log("started server on 443");
+
