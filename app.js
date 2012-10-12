@@ -63,19 +63,13 @@ cordinates.index ({
   loc : "2d"
 });
 
-
-
-
 var cordinatesModel = mongoose.model('cordinates', cordinates);
 
-var engageAPI = janrain('8ebd390177383a0bd31e55ba97dfd27ec20c3eaf');
 
+// API config settings
+var engageAPI = janrain('8ebd390177383a0bd31e55ba97dfd27ec20c3eaf');
 var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
 
-
-
-
-//var app = express();
 
 
 
@@ -94,6 +88,7 @@ var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
  };
 
 
+// SSL Certificate values
 var options = {
   key: fs.readFileSync('ssl/api_zunefit.key'),
   ca: fs.readFileSync('ssl/api_zunefit_com.ca-bundle'),
@@ -101,8 +96,12 @@ var options = {
   requestCert: true,
 }
 
+
+// Build initial express Server
 var app = module.exports = express.createServer();
 
+
+// Set express server options
 app.configure(function(){
   app.use(allowCrossDomain);
   app.set('views', __dirname + '/views');
@@ -115,12 +114,14 @@ app.configure(function(){
   app.use(app.router);
 });
 
+
+//Environment specific settings
 app.configure('development', function(){
   app.use(express.errorHandler());
 });
 
 
-
+// Begin routes
 app.get('/', function(req, res){
   res.render('index', {
     title: 'ZuneFit',
@@ -804,6 +805,7 @@ app.post('/api/newReward/', function(req, res) {
 });
 
 
+// Set Server to listen on specified ports
 http.createServer(app).listen(80);
 console.log("started server on 80");
 
