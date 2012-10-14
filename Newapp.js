@@ -283,11 +283,6 @@ app.get('/api/featuredGyms/', function(req, res){
 
 
 app.get('/api/balance/', function(req, res){
-  try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  }
   rmysql.query('SELECT balance FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
   if (err) {
      res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
@@ -303,12 +298,7 @@ app.get('/api/balance/', function(req, res){
 
 
 app.get('/api/disbursement/', function(req, res){
-  try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  }
-  rmysql.query('SELECT type,paylimit FROM disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) WHERE gu.token = "' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  rmysql.query('SELECT type,paylimit FROM disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -320,13 +310,12 @@ app.get('/api/disbursement/', function(req, res){
 
 app.post('/api/updateDisbursement/', function(req, res){
   try {
-    check(req.params.paylimit).notNull().isNumeric()
-    check(req.body.type).notNull().isAlpha()
-    check(req.header('token')).notEmpty().isAlphanumeric()
+    check(req.body.paylimit).notNull().isNumeric()
+    check(req.body.type).notNull().isNumeric()
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) set d.type = ' + rmysql.escape(req.body.type) + ',d.paylimit = ' + rmysql.escape(req.body.paylimit) + ' WHERE gu.token = "' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) set d.type = ' + rmysql.escape(req.body.type) + ',d.paylimit = ' + rmysql.escape(req.body.paylimit) + ' WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -348,12 +337,7 @@ app.get('/api/paymentMethods/', function(req, res){
 
 
 app.get('/api/userPreferences/', function(req, res){
-  try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  }
-  rmysql.query('SELECT AES_DECRYPT(u.email,"' + salt + '") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"' + salt + '") AS address,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE `u.' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields){
+  rmysql.query('SELECT CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,u.city,u.state,u.zipcode,b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields){
   if (err) {
     res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
   } else {
@@ -365,13 +349,11 @@ app.get('/api/userPreferences/', function(req, res){
 
 app.post('/api/setPinCode/', function(req, res) {
   try {
-    check(req.body.phone).notEmpty().len(9,9).isNumeric()
-    check(req.body.pincode).notEmpty().len(4,7).isNumeric()
-    check(req.header('token')).notEmpty().isAlphanumeric()
+    check(req.body.phone).notEmpty().len(10,10).isNumeric()
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE users SET phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND pincode = "' + req.body.pincode + '" WHERE `' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE users SET phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '"), pincode = ' + wmysql.escape(req.body.pincode) + ' WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -385,12 +367,11 @@ app.post('/api/userSchedule/', function(req, res){
   try {
     check(req.body.start).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
     check(req.body.end).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
-    check(req.header('token')).notEmpty().isAlphanumeric()
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
     console.log(req.body.start);
-    rmysql.query('SELECT s.id,g.name,s.classid,c.service,DATE_FORMAT(datetime, "%m/%d/%Y ") as date, DATE_FORMAT(datetime,"%l:%i %p") as time FROM schedule s INNER JOIN classes c ON (s.classid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE `u.' + req.header('ltype') + '_token` = "' + req.header('token') + '" AND c.datetime > "' + req.body.start + '" AND c.datetime < "' + req.body.end + '" ORDER BY c.datetime', function(err, result, fields) {
+    rmysql.query('SELECT s.id,g.name,s.classid,c.service,DATE_FORMAT(datetime, "%m/%d/%Y ") as date, DATE_FORMAT(datetime,"%l:%i %p") as time FROM schedule s INNER JOIN classes c ON (s.classid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND c.datetime > "' + req.body.start + '" AND c.datetime < "' + req.body.end + '" ORDER BY c.datetime', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -405,7 +386,7 @@ app.post('/api/userSchedule/', function(req, res){
 
 app.post('/api/userCheckin/', function(req, res){
   try {
-    check(req.body.phone).notEmpty().len(9,9).isNumeric()
+    check(req.body.phone).notEmpty().len(10,10).isNumeric()
     check(req.body.pincode).notEmpty().len(4,7).isNumeric()
     check(req.body.gymid).notEmpty().isNumeric() 
   } catch (e) {
@@ -498,12 +479,7 @@ app.post('/api/userSignup/', function(req, res){
 
 
 app.post('/api/userSignout/', function(req, res){
-  try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  }
-  wmysql.query('UPDATE users SET token = null WHERE `' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE users SET token = null WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');	
     }
@@ -544,14 +520,13 @@ app.post('/api/gymLogin/', function(req, res){
 
 app.post('/api/updateUserPreferences/', function(req, res){
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.email).notEmpty().isEmail()
     check(req.body.zipcode).notEmpty().len(5,5).isNumeric()
     check(req.body.rate).notEmpty().len(1,5).isInt() 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE users SET email = AES_ENCRYPT("' + req.body.email + '","' + salt + '"), first_name = ' + wmysql.escape(req.body.first_name) + ', last_name = ' + wmysql.escape(req.body.last_name) + ', address = AES_ENCRYPT("' + req.body.address + '","' + salt + '"), city = ' + wmysql.escape(req.body.city) + ', state = ' + wmysql.escape(req.body.state) + ', zipcode = "' + req.body.zipcode + '", rate = "' + req.body.rate + '" WHERE `' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE users SET email = AES_ENCRYPT("' + req.body.email + '","' + salt + '"), first_name = ' + wmysql.escape(req.body.first_name) + ', last_name = ' + wmysql.escape(req.body.last_name) + ', address = AES_ENCRYPT("' + req.body.address + '","' + salt + '"), city = ' + wmysql.escape(req.body.city) + ', state = ' + wmysql.escape(req.body.state) + ', zipcode = "' + req.body.zipcode + '", rate = "' + req.body.rate + '" WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) { 
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -563,14 +538,13 @@ app.post('/api/updateUserPreferences/', function(req, res){
 
 app.post('/api/addEvent/', function(req, res){
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.price).notEmpty().len(1,5).isInt()
     check(req.body.classid).notEmpty().isNumeric()
     check(req.body.gymid).notEmpty().isNumeric() 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('INSERT INTO schedule (userid,gymid,classid,price) SELECT id,' + req.body.gymid + ',' + req.body.classid + ',' + req.body.price + ' FROM users WHERE `' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('INSERT INTO schedule (userid,gymid,classid,price) SELECT id,' + req.body.gymid + ',' + req.body.classid + ',' + req.body.price + ' FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -582,12 +556,11 @@ app.post('/api/addEvent/', function(req, res){
 
 app.del('/api/deleteEvent/', function(req, res){  
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.sid).notEmpty().isNumeric()
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('DELETE s FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.id = ' + req.body.sid + ' AND `u.' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('DELETE s FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.id = ' + req.body.sid + ' AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -618,6 +591,11 @@ app.post('/api/redeemed/', function(req, res){
 */
 
 app.get('/api/getClasses/:gid', function(req, res){
+  try {
+    check(req.params.gid).notEmpty().isNumeric();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
   rmysql.query('SELECT id,gymid,service,price,DATE_FORMAT(datetime, "%M %D %Y ") AS date,TIME(datetime) AS time FROM classes WHERE gymid = ' + req.params.gid, function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
@@ -630,12 +608,11 @@ app.get('/api/getClasses/:gid', function(req, res){
 
 app.post('/api/addClass/', function(req, res){
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.datetime).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('INSERT INTO classes (gymid,service,price,datetime) SELECT gu.gymid,' + wmysql.escape(req.body.service) + ',g.rate,"' + req.body.datetime + '" FROM gyms g,gymUsers gu WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('INSERT INTO classes (gymid,service,price,datetime) SELECT gu.gymid,' + wmysql.escape(req.body.service) + ',g.rate,"' + req.body.datetime + '" FROM gyms g,gymUsers gu WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -664,14 +641,13 @@ app.get('/api/getClass/:cid', function(req, res){
 
 app.post('/api/updateClass/', function(req, res){
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.price).notEmpty().len(1,5).isInt()
     check(req.body.classid).notEmpty().isNumeric()
     check(req.body.datetime).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',price = "' + req.body.price + '", datetime = "' + req.body.datetime + '" WHERE c.id = ' + req.body.classid + ' AND gu.token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',price = "' + req.body.price + '", datetime = "' + req.body.datetime + '" WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -683,12 +659,11 @@ app.post('/api/updateClass/', function(req, res){
 
 app.del('/api/deleteClass/', function(req, res){  
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.classid).notEmpty().isNumeric()
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-   wmysql.query('DELETE c FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = "' + req.header('token') + '")', function(err, result, fields) {
+   wmysql.query('DELETE c FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -726,23 +701,22 @@ app.post('/api/addGym/', function(req, res){
 
 app.post('/api/addGymProfile/', function(req, res){
   try {
-    check(req.body.phone).notEmpty().len(9,9).isNumeric()
-    check(req.header('token')).notEmpty().isAlphanumeric()
+    check(req.body.phone).notEmpty().len(10,10).isNumeric()
     check(req.body.email).notEmpty().isEmail()
     check(req.body.zipcode).notEmpty().len(5,5).isNumeric()
     check(req.body.limit).notEmpty().isNumeric() 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE gyms set address = ' + wmysql.escape(req.body.address) + ',city = ' + wmysql.escape(req.body.city) + ',state = ' + wmysql.escape(req.body.state) + '",zipcode = "' + req.body.zipcode + '",phone = "' + req.body.phone + '",email = "' + req.body.email + '",contact = "' + req.body.contact + '",complete = true WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE gyms set address = ' + wmysql.escape(req.body.address) + ',city = ' + wmysql.escape(req.body.city) + ',state = ' + wmysql.escape(req.body.state) + '",zipcode = "' + req.body.zipcode + '",phone = "' + req.body.phone + '",email = "' + req.body.email + '",contact = "' + req.body.contact + '",complete = true WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
-      wmysql.query('UPDATE hours h INNER JOIN gymUsers ug ON h.gymid = ug.gymid set monday = "' + req.body.monday + '",tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '",thursday = "' + req.body.thursday + '",friday = "' + req.body.friday + '",saturday = "' + req.body.saturday + '",sunday = "' + req.body.sunday + '" WHERE ug.token = "' + req.header('token') + '"', function(err, result, fields) {
+      wmysql.query('UPDATE hours h INNER JOIN gymUsers ug ON h.gymid = ug.gymid set monday = "' + req.body.monday + '",tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '",thursday = "' + req.body.thursday + '",friday = "' + req.body.friday + '",saturday = "' + req.body.saturday + '",sunday = "' + req.body.sunday + '" WHERE ug.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
       if (err) {
         res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
       } else {
-        wmysql.query('INSERT INTO disbursement (gymid,type,paylimit) SELECT id,' + req.body.type + ',' + req.body.limit + ' FROM gyms WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+        wmysql.query('INSERT INTO disbursement (gymid,type,paylimit) SELECT id,' + req.body.type + ',' + req.body.limit + ' FROM gyms WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
             if (err) {
               res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
             } else {
@@ -774,7 +748,10 @@ app.post('/api/addGymUser/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,group,created,lastlogin) SELECT id,token,"' + req.body.username +  '",' + wmysql.escape(req.body.firstName) + ',' + wmysql.escape(req.body.lastName) + ',' + req.body.group + ',NOW(),NOW() FROM gyms WHERE token = "' + req.body.token, function(err, result, fields) {
+  require('crypto').randomBytes(48, function(ex, buf) {
+    var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+  });
+  wmysql.query('INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) SELECT id,token,"' + req.body.username +  '",' + wmysql.escape(req.body.firstName) + ',' + wmysql.escape(req.body.lastName) + ',0,NOW() FROM gyms WHERE token = ' + token, function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -785,14 +762,9 @@ app.post('/api/addGymUser/', function(req, res){
 
 
 app.post('/api/updateGymEmployee/', function(req, res) {
-  try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  }
-  rmysql.query('SELECT password FROM gymUsers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+  rmysql.query('SELECT password FROM gymUsers WHERE token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if(result.password == req.body.cpass) {
-      wmysql.query('UPDATE gymUsers set password = "' + req.body.npass + '" WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+      wmysql.query('UPDATE gymUsers set password = "' + req.body.npass + '" WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
         if(err) {
           res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
         } else {
@@ -819,18 +791,17 @@ app.post('/api/deleteGymUser/', function(req, res){
 
 app.post('/api/updateGym/', function(req, res){
   try {
-    check(req.body.phone).notEmpty().len(9,9).isNumeric()
-    check(req.header('token')).notEmpty().isAlphanumeric()
+    check(req.body.phone).notEmpty().len(10,10).isNumeric()
     check(req.body.email).notEmpty().isEmail()
     check(req.body.zipcode).notEmpty().len(5,5).isNumeric() 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE gyms g INNER JOIN gymUsers ug ON g.id = gu.gymid set name = ' + wmysql.escape(req.body.name) + ',address = ' + wmysql.escape(req.body.address) + ',city = ' + wmysql.escape(req.body.city) + ',state = ' + wmysql.escape(req.body.state) + ',zipcode = "' + req.body.zipcode + '",phone = "' + req.body.phone + '",email = "' + req.body.email + '",contact = "' + req.body.contact + '" WHERE ug.token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE gyms g INNER JOIN gymUsers ug ON g.id = gu.gymid set name = ' + wmysql.escape(req.body.name) + ',address = ' + wmysql.escape(req.body.address) + ',city = ' + wmysql.escape(req.body.city) + ',state = ' + wmysql.escape(req.body.state) + ',zipcode = "' + req.body.zipcode + '",phone = "' + req.body.phone + '",email = "' + req.body.email + '",contact = "' + req.body.contact + '" WHERE ug.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
       if (err) {
         res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
       } else {
-        wmysql.query('UPDATE hours h INNER JOIN gymUsers ug ON h.gymid = ug.gymid set monday = "' + req.body.monday + '",tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '",thursday = "' + req.body.thursday + '",friday = "' + req.body.friday + '",saturday = "' + req.body.saturday + '",sunday = "' + req.body.sunday + '" WHERE ug.token = "' + req.header('token') + '"', function(err, result, fields) {
+        wmysql.query('UPDATE hours h INNER JOIN gymUsers ug ON h.gymid = ug.gymid set monday = "' + req.body.monday + '",tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '",thursday = "' + req.body.thursday + '",friday = "' + req.body.friday + '",saturday = "' + req.body.saturday + '",sunday = "' + req.body.sunday + '" WHERE ug.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
           if (err) {
             res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
           } else {
@@ -861,12 +832,7 @@ app.post('/api/updateGym/', function(req, res){
 
 
 app.get('/api/gymBalance/', function(req, res){
-  try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  }
-  rmysql.query('SELECT balance FROM gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid WHERE gu.token = "' + req.header('token') + '"', function(err, result, fields) {
+  rmysql.query('SELECT balance FROM gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -878,13 +844,12 @@ app.get('/api/gymBalance/', function(req, res){
 
 app.post('/api/gymSchedule/', function(req, res){
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.start).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
     check(req.body.end).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-    rmysql.query('SELECT u.id AS uid,s.id AS sid,u.first_name,u.last_name,s.redeemed,c.service,DATE_FORMAT(c.datetime, "%M %D %Y ") AS date,TIME(c.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = "' + req.header('token') + '" AND c.datetime > "' + req.body.start + '" AND c.datetime < "' + req.body.end + '" ORDER BY c.datetime', function(err, result, fields) {
+    rmysql.query('SELECT u.id AS uid,s.id AS sid,u.first_name,u.last_name,s.redeemed,c.service,DATE_FORMAT(c.datetime, "%M %D %Y ") AS date,TIME(c.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + wmysql.escape(req.header('token')) + ' AND c.datetime > "' + req.body.start + '" AND c.datetime < "' + req.body.end + '" ORDER BY c.datetime', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -896,20 +861,15 @@ app.post('/api/gymSchedule/', function(req, res){
 
 
 app.del('/api/deleteAccount/', function(req, res){ 
-try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  } 
-  wmysql.query('DELETE s FROM schedule s INNER JOIN users u WHERE userid = ' + req.body.uid + ' AND `u.' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('DELETE s FROM schedule s INNER JOIN users u WHERE userid = ' + req.body.uid + ' AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
      res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
-      wmysql.query('DELETE b FROM balance b INNER JOIN users u WHERE b.userid = ' + req.body.uid + ' AND `u.' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+      wmysql.query('DELETE b FROM balance b INNER JOIN users u WHERE b.userid = ' + req.body.uid + ' AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
         if (err) {
           res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
         }  else {
-          wmysql.query('DELETE FROM users WHERE id = ' + req.body.uid + ' AND `' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+          wmysql.query('DELETE FROM users WHERE id = ' + req.body.uid + ' AND `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
           if (err) {
             res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
            } else {
@@ -926,11 +886,10 @@ try {
 app.post('/api/gymView', function(req, res){
   try {
     check(req.body.gymid).notEmpty().isNumeric()
-    check(req.header('token')).notEmpty().isAlphanumeric() 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('INSERT INTO stats (gymid,userid,type) SELECT ' + req.body.gymid + ',id,0 FROM users WHERE `' + req.header('ltype') + '_token` = "' + req.body.token + '"', function(err, result, fields) {
+  wmysql.query('INSERT INTO stats (gymid,userid,type) SELECT ' + req.body.gymid + ',id,0 FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else { 
@@ -941,12 +900,7 @@ app.post('/api/gymView', function(req, res){
 
 
 app.get('/api/gymStats/', function(req, res){
-  try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
-  } catch (e) {
-    res.send('{"status": "failed", "message":"' + e.message + '"}');
-  }
-  rmysql.query('SELECT(SELECT COUNT(*) FROM stats WHERE type = 1 AND gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS visits,(SELECT COUNT(*) FROM stats WHERE type = 0 AND gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS views,(SELECT AVG(price) FROM classes WHERE gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS price', function(err, result, fields) {
+  rmysql.query('SELECT(SELECT COUNT(*) FROM stats WHERE type = 1 AND gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS visits,(SELECT COUNT(*) FROM stats WHERE type = 0 AND gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS views,(SELECT AVG(price) FROM classes WHERE gymid IN (SELECT id FROM gyms WHERE token = ' + rmysql.escape(req.header('token')) + ')) AS price', function(err, result, fields) {
   if (err) {
     res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
   } else {
@@ -958,12 +912,11 @@ app.get('/api/gymStats/', function(req, res){
 
 app.post('/api/paymentTransaction/', function(req, res) {
   try {
-    check(req.header('token')).notEmpty().isAlphanumeric()
     check(req.body.refid).notEmpty().isNumeric()
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id AS uid FROM users WHERE `' + req.header('ltype') + '_token` = "' + req.header('token') + '"', function(err, result, fields) {
+  rmysql.query('SELECT id AS uid FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
   if (err) {
     res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
   } else {
@@ -984,7 +937,7 @@ app.post('/api/getTransaction/', function(req, res) {
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT refid FROM transactions t INNER JOIN users u WHERE `u.' + req.header('ltype') + '_token` = "' + req.header('token') + '" ORDER BY timestamp DESC LIMIT 5 OFFSET ' + req.body.offset, function(err, result, fields) {
+  rmysql.query('SELECT refid FROM transactions t INNER JOIN users u WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' ORDER BY timestamp DESC LIMIT 5 OFFSET ' + req.body.offset, function(err, result, fields) {
     if(err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
