@@ -5,6 +5,7 @@
 
 var express = require('express')
   , crypto = require('crypto')
+  , connect = require('connect')
   , fs = require("fs")
   , path = require("path")
   , routes = require('./routes')
@@ -79,8 +80,8 @@ var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
  var allowCrossDomain = function(req, res, next) {
      res.header('Access-Control-Allow-Origin', '*');
      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, token, ltype');
-     res.header('Access-Control-Max-Age', '300');      
+     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, token, ltype');      
+     res.header('Access-Control-Max-Age', '300');
      // intercept OPTIONS method
      if ('OPTIONS' == req.method) {
        res.send(200);
@@ -110,19 +111,21 @@ app.configure(function(){
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
   app.use(express.favicon());
+  app.use(connect.compress());
   app.use(express.logger('dev'));
   app.use(express.static(__dirname + '/public'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
+  app.use(express.errorHandler());
   app.use(app.router);
 });
 
 
 //Environment specific settings
-app.configure('development', function(){
+/*app.configure('development', function(){
   app.use(express.errorHandler());
 });
-
+*/
 
 // Begin routes
 app.get('/', function(req, res){
@@ -228,7 +231,7 @@ app.post('/api/gymId/', function(req, res) {
 
 
 app.get('/api/gymInfo/:gymId', function(req, res){
-  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact FROM gyms WHERE id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
+  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact FROM gyms WHERE id = "' + req.params.gymId + '"', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -253,7 +256,7 @@ app.get('/api/featuredGyms/', function(req, res){
 
 
 app.get('/api/balance/', function(req, res){
-  rmysql.query('SELECT balance FROM users WHERE ' + rmysql.escape(req.header('ltype')) + '_token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  rmysql.query('SELECT balance FROM users WHERE ' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
   if (err) {
      res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -268,7 +271,7 @@ app.get('/api/balance/', function(req, res){
 
 
 app.get('/api/disbursement/', function(req, res){
-  rmysql.query('SELECT type,paylimit FROM disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  rmysql.query('SELECT type,paylimit FROM disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) WHERE gu.token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -279,7 +282,7 @@ app.get('/api/disbursement/', function(req, res){
 
 
 app.post('/api/updateDisbursement/', function(req, res){
-  wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) set d.type = ' + rmysql.escape(req.body.type) + ',d.paylimit = ' + rmysql.escape(req.body.paylimit) + ' WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) set d.type = ' + req.body.type + ',d.paylimit = ' + req.body.paylimit + ' WHERE gu.token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
     } else {
@@ -756,7 +759,7 @@ app.post('/api/gymView', function(req, res){
 
 
 app.get('/api/gymStats/', function(req, res){
-  rmysql.query('SELECT(SELECT COUNT(*) FROM stats WHERE type = 1 AND gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS visits,(SELECT COUNT(*) FROM stats WHERE type = 0 AND gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS views,(SELECT AVG(price) FROM classes WHERE gymid IN (SELECT id FROM gyms WHERE token = "' + req.header('token') + '")) AS price', function(err, result, fields) {
+  rmysql.query('SELECT(SELECT COUNT(*) FROM stats WHERE type = 1 AND gymid IN (SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '")) AS visits,(SELECT COUNT(*) FROM stats WHERE type = 0 AND gymid IN (SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '")) AS views,(SELECT AVG(price) FROM classes WHERE gymid IN (SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '")) AS price', function(err, result, fields) {
   if (err) {
     res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
   } else {
@@ -807,10 +810,32 @@ app.post('/api/newReward/', function(req, res) {
   }
 });
 
-// Catch uncaught exception to prevent app from dying
-process.on('uncaughtException', function (err) {
-  console.log('Caught exception: ' + err);
+
+app.post('/api/aLogin/', function(req, res) {
+   rmysql.query('SELECT au.userid FROM users u INNER JOIN adminUsers au ON u.id = au.userid WHERE u.email = AES_ENCRYPT("' + req.body.username + '","' + salt + '") AND au.password = "' + req.body.password + '"', function(err, result, fields) {
+
+    if(err)
+      res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+    else {
+      require('crypto').randomBytes(48, function(ex, buf) {
+        var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+        var userid = result[0].userid;
+        wmysql.query('UPDATE adminUsers set token = "' + token + '" WHERE userid = ' + userid, function(err, result, fields) {
+          if(err) {
+            res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+          } else {
+            res.send('{"status": "success", "token": "' + token + '"}');
+          }
+        });
+      });    
+    }
+  });
 });
+
+
+/*process.on('uncaughtException', function (err) {
+  console.log('Caught exception: ' + err);
+});*/
 
 // Set Server to listen on specified ports
 http.createServer(app).listen(80);
