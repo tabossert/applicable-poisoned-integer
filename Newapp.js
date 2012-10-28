@@ -5,6 +5,7 @@
 
 var express = require('express')
   , crypto = require('crypto')
+  , connect = require('connect')
   , fs = require("fs")
   , path = require("path")
   , routes = require('./routes')
@@ -152,6 +153,7 @@ app.configure(function(){
   app.set('view engine', 'jade');
   app.use(express.favicon());
   app.use(express.logger('dev'));
+  app.use(connect.compress());
   app.use(express.static(__dirname + '/public'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
@@ -294,17 +296,28 @@ app.get('/api/gymInfo/:gymId', function(req, res){
 
 
 
-
-
 app.get('/api/featuredGyms/', function(req, res){
   rmysql.query('SELECT name,address,city,state,zipcode,phone,email FROM gyms WHERE featured = true', function(err, result, fields) {
     if (err) {
-     res.send('{"status": "failed", "message":"Already applied"}');
+     res.send('{"status": "failed", "message":"Unable to retreive"}');
     } else {
       res.send(result);
     }
   });
 });
+
+
+
+app.get('/api/featuredWorkouts/', function(req, res){
+  rmysql.query('SELECT gymid,service FROM classes WHERE featured = true', function(err, result, fields) {
+    if (err) {
+     res.send('{"status": "failed", "message":"Unable to retreive"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 
 
 app.get('/api/balance/', function(req, res){
@@ -428,20 +441,20 @@ app.post('/api/userSchedule/', function(req, res){
 
 
 app.post('/api/userCheckin/', function(req, res){
+console.log("checkin");
   try {
     check(req.body.phone).notEmpty().len(10,10).isNumeric()
-    check(req.body.pincode).notEmpty().len(4,7).isNumeric()
     check(req.body.gymid).notEmpty().isNumeric() 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
   rmysql.query('SELECT id FROM users WHERE phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND pincode = "' + req.body.pincode + '"', function(err, result, fields) {
     if(result.length < 1) {
-      res.send('[{"status": "failed","message": "Invalid phone/pincode combination"}]');
+      res.send('[{"status": "failed","message": "Invalid phone/pincode"}]');
     } else {
       var uid = result[0].id;
       rmysql.query('SELECT id FROM checkin WHERE userid = "' + uid + '" AND gymid = "' + req.body.gymid + '" AND DATE(datetime) = DATE(NOW())', function(err, result, fields) {
-        if(result.length > 0) {
+        if(result.length > 100) {
           res.send('[{"status": "failed","message": "Already Checked In Today"}]');
         } else {
           wmysql.query('UPDATE users AS ua INNER JOIN users AS ub ON ua.id = ub.id SET ua.balance = ub.balance - (SELECT rate FROM gyms WHERE id = "' + req.body.gymid + '") WHERE ua.phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND ua.pincode = "' + req.body.pincode + '" AND ( SELECT ua.balance - (SELECT rate FROM gyms WHERE id = "' + req.body.gymid + '")) > 0', function(err, wresult, fields) {
@@ -478,7 +491,7 @@ app.post('/api/userCheckin/', function(req, res){
 
 app.post('/api/userSignup/', function(req, res){
  console.log(req);
-  engageAPI.authInfo(req.body.token, true, function(err, data) {
+  engageAPI.authInfo(req.header('token'), true, function(err, data) {
       if(err) {
         console.log('ERROR: ' + err.message);
         res.send('[{"status": "invalidToken"}]');
@@ -491,7 +504,7 @@ app.post('/api/userSignup/', function(req, res){
           require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
             if(result.length < 1) {
-              wmysql.query('INSERT INTO users (email,first_name,last_name,`' + req.body.ltype + '_token`,created,lastlogin) VALUES (AES_ENCRYPT("' + data.profile.email + '","' + salt + '"),"' + data.profile.name.givenName + '","' + data.profile.name.familyName + '","' + token + '",NOW(),NOW())', function(err, result, fields) {
+              wmysql.query('INSERT INTO users (email,first_name,last_name,`' + req.header('ltype') + '_token`,created,lastlogin) VALUES (AES_ENCRYPT("' + data.profile.email + '","' + salt + '"),"' + data.profile.name.givenName + '","' + data.profile.name.familyName + '","' + token + '",NOW(),NOW())', function(err, result, fields) {
               if (err) {
                 res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
               } else {
@@ -505,8 +518,8 @@ app.post('/api/userSignup/', function(req, res){
           }
         });
       } else {
-	  console.log(req.body.ltype);
-          wmysql.query('UPDATE users SET `' + req.body.ltype + '_token` = "' + token + '", lastlogin = NOW() WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
+	  console.log(req.header('ltype'));
+          wmysql.query('UPDATE users SET `' + req.header('ltype') + '_token` = "' + token + '", lastlogin = NOW() WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
             if (err) {
               res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
             } else {
@@ -847,7 +860,7 @@ app.post('/api/updateGymEmployee/', function(req, res) {
 
 app.post('/api/deleteGymUser/', function(req, res){
   rmysql.query('SELECT id FROM gymUsers WHERE groupid = 1 AND token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-    if(result.length < 1) {
+    if(result.length > 0) {
       wmysql.query('DELETE FROM gymUsers WHERE id = ' + req.body.eid, function(err, result, fields) {
         if(err) {
           res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
@@ -1053,10 +1066,12 @@ app.post('/api/newReward/', function(req, res) {
 });
 
 
+//ADMIN Section of calls
+
 app.post('/api/aLogin/', function(req, res) {
    rmysql.query('SELECT au.userid FROM users u INNER JOIN adminUsers au ON u.id = au.userid WHERE u.email = AES_ENCRYPT("' + req.body.username + '","' + salt + '") AND au.password = ' + rmysql.escape(req.body.password), function(err, result, fields) {
     if(err)
-      res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+      res.send('{"status": "failed", "message":"Invalid username/password"}');
     else {
       require('crypto').randomBytes(48, function(ex, buf) {
         var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
@@ -1085,11 +1100,36 @@ app.post('/api/aLogout/', function(req, res){
       res.send('{"status": "failed", "message":"' + res.send(err) + '"}');  
     }
     else {
-        res.send('{"status": "success"}');
+      res.send('{"status": "success"}');
     }
   });
 });
 
+
+app.post('/api/getOwners/', function(req, res){
+  console.log(req.body.offset);
+  console.log(req.header('token'));
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.offset).isNumeric();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      rmysql.query('SELECT g.name,g.address,g.city,g.state,g.zipcode,g.email,g.phone,g.contact,g.balance,p.type,d.paylimit FROM gyms g INNER JOIN disbursement d ON g.id = d.gymid INNER JOIN paymentmethod p ON p.id = d.type ORDER BY g.id DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
+        if(err) {
+          res.send('{"status": "failed", "message":"' + res.send(err) + '"}');  
+        }
+        else {
+          res.send(result);
+        }
+      });
+    } else {
+      res.send('{"status": "failed", "message":"invalid token"}');
+    }
+  });
+});
 
 // Catch uncaught exception to prevent app from dying
 process.on('uncaughtException', function (err) {

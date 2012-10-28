@@ -9,10 +9,14 @@
     "express": "3.0.0alpha2",
     "connect": "2.2.0", 
     "jade": "*",
-    "mysql": "0.9.5",
+    "mysql": "2.0.0-alpha3",
     "mongoose": "2.6.0",
     "janrain-api": "0.0.1",
     "geo": "0.0.3",
-    "forever": "0.8.5" 
+    "forever": "0.8.5",
+    "validator": "0.4.12",
+    "crypto": "0.0.3",
+    "moment": "1.6.2",
+    "janrain-api": "0.0.1" 
   }
 }
