@@ -1071,9 +1071,9 @@ app.post('/api/newReward/', function(req, res) {
 
 app.post('/api/aLogin/', function(req, res) {
    rmysql.query('SELECT au.userid FROM users u INNER JOIN adminUsers au ON u.id = au.userid WHERE u.email = AES_ENCRYPT("' + req.body.username + '","' + salt + '") AND au.password = ' + rmysql.escape(req.body.password), function(err, result, fields) {
-    if(err)
+    if(result.length > 0) {
       res.send('{"status": "failed", "message":"Invalid username/password"}');
-    else {
+    } else {
       require('crypto').randomBytes(48, function(ex, buf) {
         var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
         var userid = result[0].userid;
