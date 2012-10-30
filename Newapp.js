@@ -77,9 +77,25 @@ function handleDisconnect(connection) {
 
     console.log('Re-connecting lost connection: ' + err.stack);
 
-    connection = mysql.createConnection(connection.config);
-    handleDisconnect(connection);
-    connection.connect();
+    var wmysql = _mysql.createConnection({
+      host: WHOST,
+      port: WPORT,
+      user: WMYSQL_USER,
+      password: WMYSQL_PASS,
+    });
+
+
+    var rmysql = _mysql.createConnection({
+        host: RHOST,
+        port: RPORT,
+        user: RMYSQL_USER,
+        password: RMYSQL_PASS,
+    });
+
+    handleDisconnect(wmysql);
+    handleDisconnect(rmysql);
+    wmysql.connect();
+    rmysql.connect();
   });
 }
 
@@ -1071,7 +1087,7 @@ app.post('/api/newReward/', function(req, res) {
 
 app.post('/api/aLogin/', function(req, res) {
    rmysql.query('SELECT au.userid FROM users u INNER JOIN adminUsers au ON u.id = au.userid WHERE u.email = AES_ENCRYPT("' + req.body.username + '","' + salt + '") AND au.password = ' + rmysql.escape(req.body.password), function(err, result, fields) {
-    if(result.length > 0) {
+    if(result.length < 1) {
       res.send('{"status": "failed", "message":"Invalid username/password"}');
     } else {
       require('crypto').randomBytes(48, function(ex, buf) {
@@ -1118,7 +1134,7 @@ app.post('/api/getOwners/', function(req, res){
   }
   rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(result.length > 0) {
-      rmysql.query('SELECT g.name,g.address,g.city,g.state,g.zipcode,g.email,g.phone,g.contact,g.balance,p.type,d.paylimit FROM gyms g INNER JOIN disbursement d ON g.id = d.gymid INNER JOIN paymentmethod p ON p.id = d.type ORDER BY g.id DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
+      rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.email,g.phone,g.contact,g.balance,p.type,d.paylimit FROM gyms g INNER JOIN disbursement d ON g.id = d.gymid INNER JOIN paymentmethod p ON p.id = d.type ORDER BY g.id DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
         if(err) {
           res.send('{"status": "failed", "message": "unable to retreive"}');  
         }
