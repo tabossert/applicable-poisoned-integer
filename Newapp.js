@@ -670,6 +670,23 @@ app.post('/api/redeemed/', function(req, res){
 });
 */
 
+
+app.post('/api/getAllClasses/', function(req, res){
+  try {
+    check(req.body.offset).notEmpty().isNumeric();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id,gymid,service,price,DATE_FORMAT(datetime, "%M %D %Y ") AS date,TIME(datetime) AS time FROM classes ORDER BY service DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
+   if (err) {
+      res.send('{"status": "failed", "message": "no matching gym"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+
 app.get('/api/getClasses/:gid', function(req, res){
   try {
     check(req.params.gid).notEmpty().isNumeric();
@@ -1123,7 +1140,7 @@ app.post('/api/aLogout/', function(req, res){
 });
 
 
-app.post('/api/getOwners/', function(req, res){
+app.post('/api/getFC/', function(req, res){
   console.log(req.body.offset);
   console.log(req.header('token'));
   try {
@@ -1147,6 +1164,127 @@ app.post('/api/getOwners/', function(req, res){
     }
   });
 });
+
+
+app.get('/api/getEmployees/:gid', function(req, res){
+  console.log(req.header('token'));
+  try {
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      rmysql.query('SELECT gymid,username,first_name,last_name,groupid,lastlogin FROM gymUsers WHERE gymid = ' + req.params.gid, function(err, result, fields) {
+        if(err) {
+          res.send('{"status": "failed", "message": "unable to retreive"}');  
+        }
+        else {
+          res.send(result);
+        }
+      });
+    } else {
+      res.send('{"status": "failed", "message":"invalid token"}');
+    }
+  });
+});
+
+
+app.post('/api/updateEmployee/:guid', function(req, res){
+  console.log(req.header('token'));
+  try {
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      rmysql.query('UPDATE gymUsers set first_name = ' + req.body.first_name + ',last_name = ' + req.body.last_name + ',groupid = ' + req.body.groupid + ',password = ' + req.body.password + ' WHERE id = ' + req.params.guid, function(err, result, fields) {
+        if(err) {
+          res.send('{"status": "failed", "message": "unable to update"}');  
+        }
+        else {
+          res.send(result);
+        }
+      });
+    } else {
+      res.send('{"status": "failed", "message":"invalid token"}');
+    }
+  });
+});
+
+
+
+app.post('/api/getUsers/', function(req, res){
+  console.log(req.body.offset);
+  console.log(req.header('token'));
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.offset).isNumeric();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      rmysql.query('SELECT id,CONVERT(AES_DECRYPT(email,"' + salt + '") USING utf8) AS email,first_name,last_name FROM users ORDER BY email DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
+        if(err) {
+          res.send('{"status": "failed", "message": "unable to retreive"}');  
+        }
+        else {
+          res.send(result);
+        }
+      });
+    } else {
+      res.send('{"status": "failed", "message":"invalid token"}');
+    }
+  });
+});
+
+
+
+app.get('/api/getUser/:uid', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id,CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,u.city,u.state,u.zipcode,b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.id = ' + rmysql.escape(req.params.uid) , function(err, result, fields){
+  if (err) {
+    res.send('{"status": "failed", "message": "unable to retreive"}');
+  } else {
+    res.send(result);
+    }    
+  });
+});
+
+
+
+app.post('/api/makeAdmin/', function(req, res){
+  console.log(req.header('token'));
+  try {
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      wmysql.query('INSERT INTO adminUsers (userid,password) VALUES(' + wmysql.escape(req.body.userid) + ',"' + req.body.password + '")', function(err, result, fields) {
+        if(err) {
+          res.send('{"status": "failed", "message": "unable to insert"}');  
+        }
+        else {
+          res.send(result);
+        }
+      });
+    } else {
+      res.send('{"status": "failed", "message":"invalid token"}');
+    }
+  });
+});
+
+
+
+
 
 // Catch uncaught exception to prevent app from dying
 process.on('uncaughtException', function (err) {
