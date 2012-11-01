@@ -19,18 +19,18 @@ var express = require('express')
   , check = require('validator').check
   , sanitize = require('validator').sanitize;
 
-var WHOST = 'instance29099.db.xeround.com';
-var WPORT = 18967;
+var WHOST = 'localhost';
+var WPORT = 3306;
 var WMYSQL_USER = 'zunefit';
 var WMYSQL_PASS = 'zunefit';
-var WDATABASE = 'zunefit';
+var WDATABASE = 'zunefitNew';
 
 
-var RHOST = 'instance29099.db.xeround.com';
-var RPORT = 18967;
+var RHOST = 'localhost';
+var RPORT = 3306;
 var RMYSQL_USER = 'zunefit';
 var RMYSQL_PASS = 'zunefit';
-var RDATABASE = 'zunefit';
+var RDATABASE = 'zunefitNew';
 
 var wmysql = _mysql.createConnection({
     host: WHOST,
