@@ -159,8 +159,10 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
       if (err) {
         res.send('{"status": "failed", "message":"No Gym matched location"}');
       } else {
+	console.log(result);
         result.forEach(function(index, array) {
           if(j < 1) {
+	    console.log(index);
             idArr = idArr + index.gymid;
             j++;
           } else {
@@ -190,13 +192,21 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
       where = where + ' AND ' + item + '.service = "' + req.body.terms[i] + '"';
     } 
   }
-  where = where + ' AND p.price < ' + req.body.rate;
+  try {
+    if(req.body.rate !== undefined) {
+      where = where + ' AND p.price < ' + req.body.rate;
+    }
+  } catch (e) {
+  }
     function runQuery(query,where,callback){
+      console.log(where);
       rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email FROM gyms g ' + query + where, function(err, result, fields) {
+      console.log('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email FROM gyms g ' + query + where);
       if (err) {
         res.send('{"status": "failed", "message": "No Gym matched"}');
       } else {
-        res.send(result);
+        console.log(result);
+	res.send(result);
        }
     });
   }
@@ -231,7 +241,7 @@ app.post('/api/gymId/', function(req, res) {
 
 
 app.get('/api/gymInfo/:gymId', function(req, res){
-  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact FROM gyms WHERE id = "' + req.params.gymId + '"', function(err, result, fields) {
+  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate FROM gyms WHERE id = "' + req.params.gymId + '"', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "No Gym matched ID"}');
     } else {
@@ -278,6 +288,15 @@ app.get('/api/balance/', function(req, res){
 });
 
 
+app.post('/api/updatePayment/', function(req, res){
+    wmysql.query('UPDATE balance b INNER JOIN users u ON b.userid = u.id SET refillamount =  "' + req.body.refillamount + '",automatic = "' + req.body.automatic + '", schedule = "' + req.body.schedule + '" WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err) {
+      res.send('{"status": "failed", "message":"unable to update"}');
+    } else {
+      res.send('{"status": "success", "message":"updated"}');
+    }
+  });
+});
 
 
 app.get('/api/disbursement/', function(req, res){
@@ -405,10 +424,11 @@ app.post('/api/userSignup/', function(req, res){
       }
       else {
 	console.log(data);
-        wmysql.query('SELECT email FROM users WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
+        wmysql.query('SELECT id,email FROM users WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
 	console.log(result);
           require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+          var uid = result[0].id;
             if(result.length < 1) {
               wmysql.query('INSERT INTO users (email,first_name,last_name,' + req.header('ltype') + '_token,created,lastlogin) VALUES (AES_ENCRYPT("' + data.profile.email + '","' + salt + '"),"' + data.profile.name.givenName + '","' + data.profile.name.familyName + '","' + token + '",NOW(),NOW())', function(err, result, fields) {
               if (err) {
@@ -418,18 +438,19 @@ app.post('/api/userSignup/', function(req, res){
 	          if (err) {
                 res.send('{"status": "failed", "message": "Unable to add balance"}');
               } else {
-                res.send('[{"token": "' + token + '"}]');
+                res.send('[{"userid": "' + uid + '", "token": "' + token + '"}]');
 	            }
 	          });
           }
         });
       } else {
+	  console.log(token);
 	  console.log(req.header('ltype'));
           wmysql.query('UPDATE users SET ' + req.header('ltype') + '_token = "' + token + '", lastlogin = NOW() WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
             if (err) {
               res.send('{"status": "failed", "message":"unable to update users token"}');
             } else {
-              res.send('[{"token": "' + token + '"}]');
+              res.send('[{"userid": "' + uid + '", "token": "' + token + '"}]');
             }
           });
          }
@@ -462,6 +483,7 @@ app.post('/api/gymLogin/', function(req, res){
         var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
         wmysql.query('UPDATE gymUsers SET token = "' + token + '", lastlogin = NOW() WHERE username = "' + req.body.username + '"', function(err, result, fields){
 	if(err) {
+	  console.log(err);
 	  res.send('[{"status": "failed", "message": "Unable to login"}]');
 	} else {
 	  res.send('[{"status": "success", "gymid": "' + gymid + '", "name": "' + name + '", "token": "' + token + '"}]');
@@ -527,6 +549,17 @@ app.post('/api/redeemed/', function(req, res){
   });  
 });
 */
+
+app.post('/api/getAllClasses/', function(req, res){
+  rmysql.query('SELECT id,gymid,service,price,DATE_FORMAT(datetime, "%M %D %Y ") AS date,TIME(datetime) AS time FROM classes ORDER BY service DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
+   if (err) {
+      res.send('{"status": "failed", "message": "no matching gym"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 
 app.get('/api/getClasses/:gid', function(req, res){
   rmysql.query('SELECT id,gymid,service,price,DATE_FORMAT(datetime, "%M %D %Y ") AS date,TIME(datetime) AS time FROM classes WHERE gymid = ' + req.params.gid, function(err, result, fields) {
@@ -846,9 +879,9 @@ app.post('/api/aLogin/', function(req, res) {
 });
 
 
-process.on('uncaughtException', function (err) {
+/*process.on('uncaughtException', function (err) {
   console.log('Caught exception: ' + err);
-});
+});*/
 
 // Set Server to listen on specified ports
 http.createServer(app).listen(80);

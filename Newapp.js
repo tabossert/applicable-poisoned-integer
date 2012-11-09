@@ -47,60 +47,30 @@ var rmysql = _mysql.createConnection({
     password: RMYSQL_PASS,
 });
 
-wmysql.connect(function(err) {
-  if(err)
-    console.log("Unable to Connect to SQL Master");
-  else {
-    console.log("Connected to SQL Master");
-  }
-});
 
-rmysql.connect(function(err) {
-  if(err)
-    console.log("Unable to Connect to SQL Slave");
-  else {
-    console.log("Connected to SQL Slave");
-  }
-});
-
-
-
-function handleDisconnect(connection) {
-  connection.on('error', function(err) {
-    if (!err.fatal) {
-      return;
+try {
+  wmysql.connect(function(err) {
+    if(err) {
+      throw new Error('Unable to Connect to SQL Master');
+    } else {
+      console.log("Connected to SQL Master");
     }
-
-    if (err.code !== 'PROTOCOL_CONNECTION_LOST') {
-      throw err;
-    }
-
-    console.log('Re-connecting lost connection: ' + err.stack);
-
-    var wmysql = _mysql.createConnection({
-      host: WHOST,
-      port: WPORT,
-      user: WMYSQL_USER,
-      password: WMYSQL_PASS,
-    });
-
-
-    var rmysql = _mysql.createConnection({
-        host: RHOST,
-        port: RPORT,
-        user: RMYSQL_USER,
-        password: RMYSQL_PASS,
-    });
-
-    handleDisconnect(wmysql);
-    handleDisconnect(rmysql);
-    wmysql.connect();
-    rmysql.connect();
   });
+} catch (e) {
+  throw new Error('Unable to Connect to SQL Master');
+}
+try {
+  rmysql.connect(function(err) {
+    if(err) {
+      throw new Error('Unable to Connect to SQL Slave');
+    } else {
+      console.log("Connected to SQL Slave");
+    }
+  });
+} catch (e) {
+      throw new Error('Unable to Connect to SQL Slave');	
 }
 
-handleDisconnect(wmysql);
-handleDisconnect(rmysql);
 
 
 
@@ -255,7 +225,9 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
       where = where + ' AND ' + item + '.service = "' + req.body.terms[i] + '"';
     } 
   }
-  where = where + ' AND p.price < ' + req.body.rate;
+  if(req.body.rate !== undefined) {
+    where = where + ' AND p.price < ' + req.body.rate;
+  }
     function runQuery(query,where,callback){
       rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email FROM gyms g ' + query + where, function(err, result, fields) {
       if (err) {
@@ -301,7 +273,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact FROM gyms WHERE id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
+  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate FROM gyms WHERE id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "no gym matches"}');
     } else {
@@ -354,6 +326,16 @@ app.get('/api/balance/', function(req, res){
 });
 
 
+
+app.post('/api/updatePayment/', function(req, res){
+    wmysql.query('UPDATE balance b INNER JOIN users u ON b.userid = u.id SET refillamount =  "' + req.body.refillamount + '",automatic = "' + req.body.automatic + '", schedule = "' + req.body.schedule + '" WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err) {
+      res.send('{"status": "failed", "message":"unable to update"}');
+    } else {
+      res.send('{"status": "success", "message":"updated"}');
+    }
+  });
+});
 
 
 app.get('/api/disbursement/', function(req, res){
@@ -1248,15 +1230,42 @@ app.get('/api/getUser/:uid', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id,CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,u.city,u.state,u.zipcode,b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.id = ' + rmysql.escape(req.params.uid) , function(err, result, fields){
-  if (err) {
-    res.send('{"status": "failed", "message": "unable to retreive"}');
-  } else {
-    res.send(result);
-    }    
+  rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      rmysql.query('SELECT id,CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,u.city,u.state,u.zipcode,b.amount,b.automatic,b.refillamount,b.schedule FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.id = ' + rmysql.escape(req.params.uid) , function(err, result, fields){
+        if (err) {
+          res.send('{"status": "failed", "message": "unable to retreive"}');
+        } else {
+          res.send(result);
+        }       
+      });
+    } else {
+      res.send('{"status": "failed", "message":"invalid token"}');
+    }  
   });
 });
 
+
+app.get('/api/getAdmins/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      rmysql.query('SELECT au.id,CONVERT(AES_DECRYPT(u.email,"oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") USING utf8) AS address,u.city,u.state,u.zipcode FROM adminUsers au INNER JOIN users u ON au.userid = u.id', function(err, result, fields){
+        if (err) {
+          res.send('{"status": "failed", "message": "unable to retreive"}');
+        } else {
+          res.send(result);
+        }    
+      });
+    } else {
+      res.send('{"status": "failed", "message":"invalid token"}');
+    }
+  });    
+});
 
 
 app.post('/api/makeAdmin/', function(req, res){
@@ -1268,12 +1277,17 @@ app.post('/api/makeAdmin/', function(req, res){
   }
   rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(result.length > 0) {
-      wmysql.query('INSERT INTO adminUsers (userid,password) VALUES(' + wmysql.escape(req.body.userid) + ',"' + req.body.password + '")', function(err, result, fields) {
-        if(err) {
-          res.send('{"status": "failed", "message": "unable to insert"}');  
-        }
-        else {
-          res.send(result);
+      rmysql.query('SELECT id FROM users WHERE id = ' + rmysql.escape(req.body.userid), function(err, result, fields) {
+        if(result.length > 0) {
+          wmysql.query('INSERT INTO adminUsers (userid,password) VALUES(' + wmysql.escape(req.body.userid) + ',"' + req.body.password + '")', function(err, result, fields) {
+            if(err) {
+              res.send('{"status": "failed", "message": "unable to insert"}');  
+            } else {
+              res.send(result);
+            }
+          });
+        } else {
+          res.send('{"status": "failed", "message":"user account does exist"}');
         }
       });
     } else {
@@ -1287,9 +1301,9 @@ app.post('/api/makeAdmin/', function(req, res){
 
 
 // Catch uncaught exception to prevent app from dying
-process.on('uncaughtException', function (err) {
+/*process.on('uncaughtException', function (err) {
   console.log('Caught exception: ' + err);
-});
+});*/
 
 // Set Server to listen on specified ports
 http.createServer(app).listen(81);
