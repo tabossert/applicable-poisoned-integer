@@ -1,22 +1,19 @@
 {
   "name": "zunefit-api",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "private": true,
   "scripts": {
     "start": "node app"
   },
   "dependencies": {
-    "express": "3.0.0alpha2",
-    "connect": "2.2.0", 
+    "express": "3.0.3",
+    "connect": "2.7.0", 
     "jade": "*",
-    "mysql": "2.0.0-alpha3",
-    "mongoose": "2.6.0",
+    "mysql": "2.0.0-alpha4",
+    "mongoose": "3.4.0",
     "janrain-api": "0.0.1",
     "geo": "0.0.3",
     "forever": "0.8.5",
-    "validator": "0.4.12",
-    "crypto": "0.0.3",
-    "moment": "1.6.2",
-    "janrain-api": "0.0.1" 
+    "validator": "0.4.16" 
   }
 }
