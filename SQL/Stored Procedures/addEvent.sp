@@ -4,7 +4,7 @@
 -- --------------------------------------------------------------------------------
 DELIMITER $$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `addEvent`(IN token  VARCHAR(100), IN price int(5), IN classid int(11), IN gymid int(11), IN dateTime datetime)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `addEvent`(IN token  VARCHAR(100), IN price int(5), IN classid int(11), IN gymid int(10), IN dateTime datetime)
 BEGIN
 
 
@@ -20,7 +20,7 @@ END;
 
 START TRANSACTION;
 
-SET transMess = "success";
+SET transMess = "unable to add event";
 INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,0,price,NOW() FROM users WHERE web_token = token;
 IF ROW_COUNT() > 0 THEN
 
@@ -47,6 +47,7 @@ ELSE
 	ROLLBACK;
 END IF;
 
+SET transMess = "success";
 COMMIT;
 
 SELECT transMess;

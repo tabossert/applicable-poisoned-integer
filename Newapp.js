@@ -485,83 +485,28 @@ app.post('/api/userSchedule/', function(req, res){
 
 app.post('/api/userCheckin/', function(req, res){
   try {
-    check(req.body.phone).notEmpty().len(10,10).isNumeric()
+    check(req.body.phone).notEmpty().len(9,9).isNumeric()
     check(req.body.gymid).notEmpty().isNumeric()
     check(req.body.pincode).notEmpty().isAlphanumeric(); 
+    check(req.body.datetime).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i) 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id FROM users WHERE phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND pincode = ' + rmysql.escape(req.body.pincode), function(err, result, fields) {
-    if(result.length < 1) {
-      res.send('[{"status": "failed","message": "Invalid phone/pincode"}]',401);
+  wmysql.query('SELECT id FROM users WHERE phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND pincode = ' + rmysql.escape(req.body.pincode), function(err, result fields) {
+    if(err) {
+      res.send('{"status": "failed", "message": "checkin failed"}');
     } else {
-      var uid = result[0].id;
-      rmysql.query('SELECT "success" AS status,u.id AS uid,u.first_name,u.last_name,u.balance,s.id AS sid,g.name,s.classid,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") as date, DATE_FORMAT(s.datetime,"%l:%i %p") as time FROM schedule s INNER JOIN classes c ON s.classid = c.id INNER JOIN gyms g ON s.gymid = g.id INNER JOIN users u ON u.id = s.userid WHERE u.phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND u.pincode = ' + rmysql.escape(req.body.pincode) + ' AND s.datetime >= NOW() AND s.datetime <= NOW() + INTERVAL 30 MINUTE AND c.daypass = 0 ORDER BY s.datetime LIMIT 1', function(err, sResult, fields) {
-          if(sResult.length < 1) {
-            rmysql.query('SELECT "success" AS status,u.id AS uid,u.first_name,u.last_name,u.balance,s.id AS sid,g.name,s.classid,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") as date, DATE_FORMAT(s.datetime,"%l:%i %p") as time FROM schedule s INNER JOIN classes c ON s.classid = c.id INNER JOIN gyms g ON s.gymid = g.id INNER JOIN users u ON u.id = s.userid WHERE u.phone = AES_ENCRYPT("' + req.body.phone + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") AND u.pincode = ' + rmysql.escape(req.body.pincode) + ' AND DATE(s.datetime) = DATE(' + rmysql.escape(req.body.date) + ')  AND c.daypass = 1 ORDER BY s.datetime LIMIT 1', function(err, sResult, fields) {
-                if(sResult.length < 1) {
-                  res.send('[{"status": "failed","message": "no scheduled workouts"}]');
-                } else {
-                  var sid = sResult[0].sid;
-                  rmysql.query('SELECT id FROM checkin WHERE userid = ' + uid + ' AND scheduleid = ' + sid, function(err, result, fields) {
-                    if(result.length > 0) {
-                      res.send('[{"status": "failed","message": "already checked in"}]');
-                    } else {
-                      wmysql.query('UPDATE users u INNER JOIN schedule s ON u.id = s.userid SET u.balance = u.balance - s.price WHERE u.phone = AES_ENCRYPT("' + req.body.phone + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") AND u.pincode = ' + rmysql.escape(req.body.pincode) + ' AND s.id = ' + sid + ' AND u.balance - s.price >= 0', function(err, wResult, fields) {
-                        if(wResult.affectedRows < 1) {
-                          res.send('[{"status": "failed","message": "insufficient balance"}]');
-                        } else {
-                          wmysql.query('UPDATE gymBilling gb INNER JOIN schedule s ON gb.gid = s.gymid INNER JOIN gyms g ON g.id = gb.gid SET zcom = gb.balance + round(s.price * g.commission/100,2), gb.balance = gb.balance + round(s.price - s.price * g.commission/100,2) WHERE gb.gid = ' + rmysql.escape(req.body.gymid) + ' AND s.id = ' + sid, function(err, result, fields) {
-                            if(err) {
-                              res.send('[{"status": "failed","message": "checked in failed"}]');
-                            } else {
-                              wmysql.query('INSERT INTO checkin (userid,gymid,datetime,scheduleid) SELECT id,' + rmysql.escape(req.body.gymi) + ',NOW(),' + sid + ' FROM users WHERE phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND pincode = ' + rmysql.escape(req.body.pincode), function(err, wresult, fields) {
-                                if(err) {
-                                  res.send('[{"status": "failed","message": "checked in failed"}]');
-                                } else {
-                                  res.send(sResult);
-                                }
-                              });
-                            }
-                          });
-                        }  
-                      });
-                    }
-                  });
-                }
-            });  
-          } else {
-            var sid = sResult[0].sid;
-            rmysql.query('SELECT id FROM checkin WHERE userid = ' + uid + ' AND scheduleid = ' + sid, function(err, result, fields) {
-              if(result.length > 0) {
-                res.send('[{"status": "failed","message": "already checked in"}]');
-              } else {
-                wmysql.query('UPDATE users u INNER JOIN schedule s ON u.id = s.userid SET u.balance = u.balance - s.price WHERE u.phone = AES_ENCRYPT("' + req.body.phone + '","oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") AND u.pincode = ' + rmysql.escape(req.body.pincode) + ' AND s.id = ' + sid + ' AND u.balance - s.price >= 0', function(err, wResult, fields) {
-                  if(wResult.affectedRows < 1) {
-                    res.send('[{"status": "failed","message": "insufficient balance"}]');
-                  } else {
-                    wmysql.query('UPDATE gymBilling gb INNER JOIN schedule s ON gb.gid = s.gymid INNER JOIN gyms g ON g.id = gb.gid SET zcom = gb.balance + round(s.price * g.commission/100,2), gb.balance = gb.balance + round(s.price - s.price * g.commission/100,2) WHERE gb.gid = ' + rmysql.escape(req.body.gymid) + ' AND s.id = ' + sid, function(err, result, fields) {
-                      if(err) {
-                        res.send('[{"status": "failed","message": "checked in failed"}]');
-                      } else {
-                        wmysql.query('INSERT INTO checkin (userid,gymid,datetime,scheduleid) SELECT id,' + rmysql.escape(req.body.gymid) + ',NOW(),' + sid + ' FROM users WHERE phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND pincode = ' + rmysql.escape(req.body.pincode), function(err, wresult, fields) {
-                          if(err) {
-                            res.send('[{"status": "failed","message": "checked in failed"}]');
-                          } else {
-                            res.send(sResult);
-                          }
-                        });
-                      }
-                    });
-                  }  
-                });
-              }
-            });
-          } 
-      });
+      if(result[0][0].transMess != "success") {
+        res.send('{"status": "failed", "message": "' + result[0][0].transMess + '"}');
+      } else {
+        res.send('{"status": "success"}');
+      }
     }
-  });
+  });    
 });
+
+
+
 
 
 app.post('/api/userSignup/', function(req, res){
