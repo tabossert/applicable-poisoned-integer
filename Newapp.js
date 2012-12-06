@@ -707,35 +707,6 @@ app.post('/api/addEvent/', function(req, res){
       }
     }
   });
-  /*wmysql.query('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,0,' + wmysql.escape(req.body.amount) + ',NOW() FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token'), function(err, result, fields) {
-      if(err) {
-        res.send('{"status": "failed", "message": "unable to add event"}');
-      } else {
-        wmysql.query('INSERT INTO schedule (userid,gymid,classid,price,datetime) SELECT id,' + req.body.gymid + ',' + req.body.classid + ',' + req.body.price + ',"' + req.body.datetime + '" FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-          if(err) {
-            wmysql.query('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,1,' + wmysql.escape(req.body.amount) + ',NOW() FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {});
-            res.send('{"status": "failed", "message": "unable to add event"}');
-          } else  {
-            var sid = result.insertId;
-            wmysql.query('UPDATE users u INNER JOIN schedule s ON u.id = s.userid SET u.balance = u.balance - s.price WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')) + ' AND s.id = ' + sid + ' AND u.balance - s.price >= 0', function(err, wResult, fields) {
-              if(wResult.affectedRows < 1) {
-                wmysql.query('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,1,' + wmysql.escape(req.body.amount) + ',NOW() FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {});                
-                res.send('{"status": "failed", "message": "insufficient balance"}');
-              } else {
-                wmysql.query('UPDATE gymBilling gb INNER JOIN schedule s ON gb.gid = s.gymid INNER JOIN gyms g ON g.id = gb.gid SET zcom = gb.balance + round(s.price * g.commission/100,2), gb.balance = gb.balance + round(s.price - s.price * g.commission/100,2) WHERE gb.gid = ' + rmysql.escape(req.body.gymid) + ' AND s.id = ' + sid, function(err, result, fields) {
-                if(err) {
-                  wmysql.query('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,1,' + wmysql.escape(req.body.amount) + ',NOW() FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {});
-
-                  res.send('{"status": "failed", "message": "unable to add event"}');
-                } else {
-                  res.send('{"stats": "success"}');
-                }
-          });
-        }
-      });
-    }  
-  });*/
-
 });
 
 
