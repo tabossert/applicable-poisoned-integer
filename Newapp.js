@@ -717,6 +717,22 @@ app.get('/api/getClasses/:gid', function(req, res){
 });
 
 
+app.post('/api/getDayClasses/', function(req, res){
+  try {
+    check(req.body.gid).notEmpty().isNumeric();
+    check(req.body.day).notEmpty().isAlphanumeric();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT id,gymid,service,price,daypass,status FROM classes WHERE gymid = ' + req.body.gid + ' AND `' + req.body.day + '` IS NOT NULL AND `' + req.body.day + '` <> ""', function(err, result, fields) {
+    if(err) {
+      res.send('{"status": "failed", "message": "no matching gym"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 app.post('/api/addClass/', function(req, res){
   try {
     check(req.header('token')).notNull();
