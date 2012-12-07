@@ -485,14 +485,14 @@ app.post('/api/userSchedule/', function(req, res){
 
 app.post('/api/userCheckin/', function(req, res){
   try {
-    check(req.body.phone).notEmpty().len(9,9).isNumeric()
+    check(req.body.phone).notEmpty().len(10,10).isNumeric()
     check(req.body.gymid).notEmpty().isNumeric()
     check(req.body.pincode).notEmpty().isAlphanumeric(); 
     check(req.body.datetime).notEmpty().regex(/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i) 
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('SELECT id FROM users WHERE phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '") AND pincode = ' + rmysql.escape(req.body.pincode), function(err, result fields) {
+  wmysql.query('call checkin(' + req.body.phone + ',"' + req.body.pincode + '",' + req.body.gymid + ',"' + req.body.datetime + '"))', function(err, result fields) {
     if(err) {
       res.send('{"status": "failed", "message": "checkin failed"}');
     } else {

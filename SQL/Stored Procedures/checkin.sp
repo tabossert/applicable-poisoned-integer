@@ -8,8 +8,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `checkin`(IN phoneNum VARCHAR(10), I
 BEGIN
 
 
-
-DECLARE salt VARCHAR(50);
 DECLARE transMess VARCHAR(100);
 DECLARE uid INT;
 DECLARE sid INT;
