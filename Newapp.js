@@ -724,7 +724,7 @@ app.post('/api/getDayClasses/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id,gymid,service,price,daypass,status FROM classes WHERE gymid = ' + req.body.gid + ' AND `' + req.body.day + '` IS NOT NULL AND `' + req.body.day + '` <> ""', function(err, result, fields) {
+  rmysql.query('SELECT id,service,' + req.body.day + ' FROM classes WHERE gymid = ' + req.body.gid + ' AND `' + req.body.day + '` IS NOT NULL AND `' + req.body.day + '` <> ""', function(err, result, fields) {
     if(err) {
       res.send('{"status": "failed", "message": "no matching gym"}');
     } else {
@@ -732,6 +732,24 @@ app.post('/api/getDayClasses/', function(req, res){
     }
   });
 });
+
+
+app.post('/api/getClassParticipants/', function(req, res) {
+  try {
+    check(req.body.classid).notEmpty().isNumeric();
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT u.id,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.classid = ' + req.body.classid + ' AND DATE(s.datetime) = "' + req.body.datetime + '" AND gu.token = ' + req.body.token, function(err, result, fields) {
+    if(err) {
+      res.send('{"status": "failed", "message": "no matching class"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 
 app.post('/api/addClass/', function(req, res){
   try {

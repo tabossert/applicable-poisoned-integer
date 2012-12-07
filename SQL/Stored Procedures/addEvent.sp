@@ -8,8 +8,8 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `addEvent`(IN ltype VARCHAR(15), IN 
 BEGIN
 
 
-DECLARE sID int(11);
-DECLARE transMess varchar(100);
+DECLARE sID INT(11);
+DECLARE transMess VARCHAR(100);
 DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
@@ -17,7 +17,7 @@ BEGIN
   -- ERROR
 END;
 
-
+SET transMess = "success";
 START TRANSACTION;
 SET @price = price;
 SET @aQuery = CONCAT('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,0,?,NOW() FROM users WHERE ',ltype,'_token = "', token,'"');
@@ -32,7 +32,7 @@ IF ROW_COUNT() > 0 THEN
 	PREPARE pQuery FROM @aQuery;
 	EXECUTE pQuery USING @gymid,@classid,@price,@dateTime;
 	IF ROW_COUNT() < 1 THEN
-		SET transMess = "unable to add event1";
+		SET transMess = "unable to add event";
 		ROLLBACK;
 	END IF;
 	
@@ -52,15 +52,15 @@ IF ROW_COUNT() > 0 THEN
 	PREPARE pQuery FROM @aQuery;
 	EXECUTE pQuery USING @gymid,@sID;
 	IF ROW_COUNT() < 1 THEN
-		SET transMess = "unable to add event2";
+		SET transMess = "unable to add event";
 		ROLLBACK;
 	END IF;
 ELSE
-	SET transMess = "unable to add event3";
+	SET transMess = "invalid token";
 	ROLLBACK;
 END IF;
 
-SET transMess = "success";
+
 COMMIT;
 
 SELECT transMess;
