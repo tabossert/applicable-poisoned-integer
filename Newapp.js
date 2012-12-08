@@ -553,7 +553,7 @@ app.post('/api/userSignup/', function(req, res){
         });
       } else {
 	  console.log(req.header('ltype'));
-          wmysql.query('UPDATE users SET `' + req.header('ltype') + '_token` = "' + token + '", lastlogin = NOW() WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
+          wmysql.query('UPDATE users SET `' + req.header('ltype') + '_token` = "' + token + '", lastlogin = NOW() WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '" AND status = 0)', function(err, result, fields) {
             if (err) {
               res.send('{"status": "failed", "message": "unable to update user"}');
             } else {
@@ -1081,23 +1081,11 @@ app.del('/api/deleteAccount/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('DELETE s FROM schedule s INNER JOIN users u WHERE userid = ' + req.body.uid + ' AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE users SET status = 1 WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
      res.send('{"status": "failed", "message": "unable to delete events"}');
     } else {
-      wmysql.query('DELETE b FROM balance b INNER JOIN users u WHERE b.userid = ' + req.body.uid + ' AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-        if (err) {
-          res.send('{"status": "failed", "message": "unable to delete balance"}');
-        }  else {
-          wmysql.query('DELETE FROM users WHERE id = ' + req.body.uid + ' AND `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-          if (err) {
-            res.send('{"status": "failed", "message": "unable to delete user"}');
-           } else {
-            res.send('{"stats": "success"}');
-            }
-          });
-        }
-      });
+      res.send('{"stats": "success"}');
     }
   });
 });

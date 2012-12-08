@@ -8,8 +8,8 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `addEvent`(IN ltype VARCHAR(15), IN 
 BEGIN
 
 
-DECLARE sID INT(11);
-DECLARE transMess VARCHAR(100);
+DECLARE sID int(11);
+DECLARE transMess varchar(100);
 DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
@@ -48,7 +48,7 @@ IF ROW_COUNT() > 0 THEN
 
 	SET @sID = sID;
 	SET @gymid = gymid;
-	SET @aQuery = CONCAT('UPDATE gymBilling gb INNER JOIN schedule s ON gb.gid = s.gymid INNER JOIN gyms g ON g.id = gb.gid SET zcom = gb.balance + round(s.price * g.commission/100,2), gb.balance = gb.balance + round(s.price - s.price * g.commission/100,2) WHERE gb.gid = ? AND s.id = ?');
+	SET @aQuery = CONCAT('UPDATE gymBilling gb INNER JOIN schedule s ON gb.gid = s.gymid INNER JOIN gyms g ON g.id = gb.gid SET zcom = gb.zcom + round(s.price * g.commission/100,2), gb.balance = gb.balance + round(s.price - s.price * g.commission/100,2) WHERE gb.gid = ? AND s.id = ?');
 	PREPARE pQuery FROM @aQuery;
 	EXECUTE pQuery USING @gymid,@sID;
 	IF ROW_COUNT() < 1 THEN

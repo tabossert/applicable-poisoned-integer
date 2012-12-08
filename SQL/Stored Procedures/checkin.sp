@@ -22,7 +22,6 @@ START TRANSACTION;
 
 SET transMess = "invalid phone/pincode";
 SELECT u.id INTO uid FROM users u WHERE phone = AES_ENCRYPT(phoneNum,'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$') AND u.pincode = pin;
-SELECT FOUND_ROWS();
 IF FOUND_ROWS() > 0 THEN
 	SET transMess = "no scheduled activity";
 	SELECT s.id INTO sid FROM users u INNER JOIN schedule s ON u.id = s.userid WHERE u.id = uid AND s.datetime >= NOW() AND s.datetime <= NOW() + INTERVAL 30 MINUTE ORDER BY s.datetime LIMIT 1;
@@ -34,8 +33,12 @@ IF FOUND_ROWS() > 0 THEN
 	END IF;
 	set transMess = "already checked in";
 	INSERT INTO checkin (userid,gymid,datetime,scheduleid) VALUES (uid,gymid,NOW(),sid);
+	IF ROW_COUNT() < 1 THEN
+		SET transMess = "checkin failed";
+		ROLLBACK;
+	END IF;
 ELSE
-	set transMess = "invalid phone/pincode";
+	SET transMess = "invalid phone/pincode";
 	ROLLBACK;
 END IF;
 
