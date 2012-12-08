@@ -34,11 +34,11 @@ IF FOUND_ROWS() > 0 THEN
 	set transMess = "already checked in";
 	INSERT INTO checkin (userid,gymid,datetime,scheduleid) VALUES (uid,gymid,NOW(),sid);
 	IF ROW_COUNT() < 1 THEN
-		SET transMess = "checkin failed";
+		set transMess = "checkin failed";
 		ROLLBACK;
 	END IF;
 ELSE
-	SET transMess = "invalid phone/pincode";
+	set transMess = "invalid phone/pincode";
 	ROLLBACK;
 END IF;
 

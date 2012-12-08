@@ -4,7 +4,7 @@
 -- --------------------------------------------------------------------------------
 DELIMITER $$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `addEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN price int(5), IN classid int(11), IN gymid int(10), IN dateTime datetime)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `addEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN price DECIMAL(10,2), IN classid int(11), IN gymid int(10), IN dateTime datetime)
 BEGIN
 
 
@@ -17,7 +17,7 @@ BEGIN
   -- ERROR
 END;
 
-SET transMess = "success";
+SET transMess = "unable to add event";
 START TRANSACTION;
 SET @price = price;
 SET @aQuery = CONCAT('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,0,?,NOW() FROM users WHERE ',ltype,'_token = "', token,'"');
@@ -62,6 +62,6 @@ END IF;
 
 
 COMMIT;
-
+SET transMess = "success";
 SELECT transMess;
 END

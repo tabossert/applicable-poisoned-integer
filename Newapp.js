@@ -659,7 +659,7 @@ app.post('/api/addEvent/', function(req, res){
       res.send('{"status": "failed", "message": "invalid class id"}');
     } else {
       var price = result[0].price;
-      wmysql.query('call addEvent(' + req.header('ltype') + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
+      wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
         if(err) {
           res.send('{"status": "failed", "message": "unable to add event"}');
         } else {
@@ -683,11 +683,15 @@ app.del('/api/deleteEvent/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('CALL deleteEvent(' + req.header('ltype') + ',' + wmysql.escape(req.header('token')) + ',' + req.body.sid + ')', function(err, wResult, fields) {
+  wmysql.query('CALL deleteEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + req.body.sid + ')', function(err, result, fields) {
     if(err) {
-      res.send('{"status": "failed", "message": "unable to delete event"}');
+      res.send('{"status": "failed", "message": "unable to add event"}');
     } else {
-      
+      if(result[0][0].transMess != "success") {
+        res.send('{"status": "failed", "message": "' + result[0][0].transMess + '"}');
+      } else {
+        res.send('{"status": "success"}')
+      }
     }
   });
 });

@@ -17,12 +17,11 @@ BEGIN
   -- ERROR
 END;
 
-SET transMess = "success";
+SET transMess = "unable to delete event";
 START TRANSACTION;
 
 SET @sid = sid;
 SET @aQuery = CONCAT('UPDATE users u INNER JOIN schedule s ON u.id = s.userid SET u.balance = u.balance + s.price WHERE s.id = ? AND ',ltype,'_token = "',token,'"');
-SELECT @aQuery;
 PREPARE pQuery FROM @aQuery;
 EXECUTE pQuery USING @sid; 
 IF ROW_COUNT() > 0 THEN
@@ -39,12 +38,12 @@ IF ROW_COUNT() > 0 THEN
 	SET @aQuery = CONCAT('DELETE s FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.id = ? AND u.',ltype,'_token = "',token,'"');
 	PREPARE pQuery FROM @aQuery;
 	EXECUTE pQuery USING @sID;
-	IF ROW_COUNT() < 1 THEN
-		SET transMess = "unable to delete event";
+	IF ROW_COUNT() > 0 THEN
+		SET transMess = "success";
 		ROLLBACK;
 	END IF;
 ELSE
-	SET transMess = "invalid token";
+	SET transMess = "invalid token or activity does not exist";
 	ROLLBACK;
 END IF;
 
