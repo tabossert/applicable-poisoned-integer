@@ -656,18 +656,27 @@ app.post('/api/addEvent/', function(req, res){
   }
   rmysql.query('SELECT price FROM classes WHERE id = ' + req.body.classid, function(err, result, fields) {
     if(err) {
-      res.send('{"status": "failed", "message": "invalid class id"}');
+      res.send('{"status": "failed", "message": "no class found"}');
     } else {
       var price = result[0].price;
-      wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
-        if(err) {
-          res.send('{"status": "failed", "message": "unable to add event"}');
+      rmysql.query('SELECT c.spots - COUNT(s.classid) AS openSpots FROM schedule s INNER JOIN classes c ON s.classid = c.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
+        console.log(result.length)
+        if(err || result.length < 1) {
+          res.send('{"status": "failed", "message": "no class found"}');
+        } else if (result[0].openSpots < 1) {
+          res.send('{"status": "failed", "message": "class full"}');
         } else {
-          if(result[0][0].transMess != "success") {
-            res.send('{"status": "failed", "message": "' + result[0][0].transMess + '"}');
-          } else {
-            res.send('{"status": "success"}')
-          }
+          wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
+            if(err) {
+              res.send('{"status": "failed", "message": "unable to add event"}');
+            } else {
+              if(result[0][0].transMess != "success") {
+                res.send('{"status": "failed", "message": "' + result[0][0].transMess + '"}');
+              } else {
+                res.send('{"status": "success"}')
+              }
+            }
+          });
         }
       });
     }
@@ -704,7 +713,7 @@ app.post('/api/getAllClasses/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id,gymid,service,price,monday,tuesday,wednesday,thursday,friday,saturday,sunday FROM classes ORDER BY service DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
+  rmysql.query('SELECT id,gymid,service,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday FROM classes ORDER BY service DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message": "no matching gym"}');
     } else {
@@ -720,7 +729,7 @@ app.get('/api/getClasses/:gid', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id,gymid,service,price,monday,tuesday,wednesday,thursday,friday,saturday,sunday AS time FROM classes WHERE gymid = ' + req.params.gid, function(err, result, fields) {
+  rmysql.query('SELECT id,gymid,service,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday AS time FROM classes WHERE gymid = ' + req.params.gid, function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message": "no matching gym"}');
     } else {
@@ -728,6 +737,18 @@ app.get('/api/getClasses/:gid', function(req, res){
     }
   });
 });
+
+
+app.post('/api/classSize/', function(req, res){
+  rmysql.query('SELECT c.spots - COUNT(s.classid) AS openSpots,c.spots AS maxSpots FROM schedule s INNER JOIN classes c ON s.classid = c.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
+    if(err) {
+      res.send('{"status": "failed", "message": "no class matching id"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 
 
 app.post('/api/getDayClasses/', function(req, res){
@@ -770,7 +791,7 @@ app.post('/api/addClass/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('INSERT INTO classes (gymid,service,price,monday,tuesday,wednesday,thursday,friday,saturday,sunday) SELECT gu.gymid,' + wmysql.escape(req.body.service) + ',' + req.body.price + ',"' + req.body.monday + '","' + req.body.tuesday + '","' + req.body.wednesday + '","' + req.body.thursday + '","' + req.body.friday + '","' + req.body.saturday + '","' + req.body.sunday + '" FROM gyms g INNER JOIN gymUsers gu ON gu.gymid = g.id WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('INSERT INTO classes (gymid,service,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday) SELECT gu.gymid,' + wmysql.escape(req.body.service) + ',' + req.body.price + ',' + req.body.spots + ',"' + req.body.monday + '","' + req.body.tuesday + '","' + req.body.wednesday + '","' + req.body.thursday + '","' + req.body.friday + '","' + req.body.saturday + '","' + req.body.sunday + '" FROM gyms g INNER JOIN gymUsers gu ON gu.gymid = g.id WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     var cid = result.insertId;
    if (err) {
       res.send('{"status": "failed", "message": "unable to add class"}');
@@ -788,7 +809,7 @@ app.get('/api/getClass/:cid', function(req, res){
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
   console.log(req.params.cid);
-  rmysql.query('SELECT id,gymid,service,price,monday,tuesday,wednesday,thursday,friday,saturday,sunday FROM classes WHERE id = ' + req.params.cid, function(err, result, fields) {
+  rmysql.query('SELECT id,gymid,service,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday FROM classes WHERE id = ' + req.params.cid, function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message": "no matching class"}');
     } else {
@@ -806,7 +827,7 @@ app.post('/api/updateClass/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',price = "' + req.body.price + '", monday = "' + req.body.monday + '", tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '", thursday = "' + req.body.thursday + '", friday = "' + req.body.friday + '", saturday = "' + req.body.saturday + '", sunday = "' + req.body.sunday + '" WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',price = "' + req.body.price + '",spots = ' + req.body.spots + ', monday = "' + req.body.monday + '", tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '", thursday = "' + req.body.thursday + '", friday = "' + req.body.friday + '", saturday = "' + req.body.saturday + '", sunday = "' + req.body.sunday + '" WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if (err) {
       res.send('{"status": "failed", "message": "unable to update class"}');
     } else {
