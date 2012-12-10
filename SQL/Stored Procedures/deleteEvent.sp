@@ -32,15 +32,15 @@ IF ROW_COUNT() > 0 THEN
 	IF ROW_COUNT() < 1 THEN
 		SET transMess = "unable to delete event";
 		ROLLBACK;
-	END IF;
-	
-	SET @sID = sID;
-	SET @aQuery = CONCAT('DELETE s FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.id = ? AND u.',ltype,'_token = "',token,'"');
-	PREPARE pQuery FROM @aQuery;
-	EXECUTE pQuery USING @sID;
-	IF ROW_COUNT() > 0 THEN
-		SET transMess = "success";
-		ROLLBACK;
+	ELSE
+		SET @sID = sID;
+		SET @aQuery = CONCAT('DELETE s FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.id = ? AND u.',ltype,'_token = "',token,'"');
+		PREPARE pQuery FROM @aQuery;
+		EXECUTE pQuery USING @sID;
+		IF ROW_COUNT() > 0 THEN
+			SET transMess = "success";
+			ROLLBACK;
+		END IF;
 	END IF;
 ELSE
 	SET transMess = "invalid token or activity does not exist";
