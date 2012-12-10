@@ -670,11 +670,7 @@ app.post('/api/addEvent/', function(req, res){
             if(err) {
               res.send('{"status": "failed", "message": "unable to add event"}');
             } else {
-              if(result[0][0].transMess != "success") {
-                res.send('{"status": "failed", "message": "' + result[0][0].transMess + '"}');
-              } else {
-                res.send('{"status": "success"}')
-              }
+              res.send('{' + result[0][0].transMess + '}');
             }
           });
         }

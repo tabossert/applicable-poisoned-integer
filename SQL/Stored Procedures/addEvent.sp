@@ -17,7 +17,7 @@ BEGIN
   -- ERROR
 END;
 
-SET transMess = "unable to add event";
+SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
 START TRANSACTION;
 SET @price = price;
 SET @aQuery = CONCAT('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,0,?,NOW() FROM users WHERE ',ltype,'_token = "', token,'"');
@@ -32,7 +32,7 @@ IF ROW_COUNT() > 0 THEN
 	PREPARE pQuery FROM @aQuery;
 	EXECUTE pQuery USING @gymid,@classid,@price,@dateTime;
 	IF ROW_COUNT() < 1 THEN
-		SET transMess = "unable to add event";
+		SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
 		ROLLBACK;
 	END IF;
 	
@@ -42,7 +42,7 @@ IF ROW_COUNT() > 0 THEN
 	PREPARE pQuery FROM @aQuery;
 	EXECUTE pQuery USING @sID;
 	IF ROW_COUNT() < 1 THEN
-		SET transMess = "insufficient balance";
+		SET transMess = CONCAT('"status": "failed", "message": "insufficient balance"');
 		ROLLBACK;
 	END IF;
 
@@ -52,16 +52,16 @@ IF ROW_COUNT() > 0 THEN
 	PREPARE pQuery FROM @aQuery;
 	EXECUTE pQuery USING @gymid,@sID;
 	IF ROW_COUNT() < 1 THEN
-		SET transMess = "unable to add event";
+		SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
 		ROLLBACK;
 	END IF;
 ELSE
-	SET transMess = "invalid token";
+	SET transMess = CONCAT('"status": "failed", "message": "invalid token"');
 	ROLLBACK;
 END IF;
 
 
 COMMIT;
-SET transMess = "success";
+SET transMess = CONCAT('"status": "success", "sid": ', sID); 
 SELECT transMess;
 END
