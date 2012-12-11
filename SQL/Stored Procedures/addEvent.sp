@@ -53,7 +53,8 @@ IF ROW_COUNT() > 0 THEN
 				SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
 				ROLLBACK;
 			ELSE
-				 SET transMess = CONCAT('"status": "success", "sid": ', sID); 
+				CALL refillBalance(ltype, token);
+				SET transMess = CONCAT('"status": "success", "sid": ', sID); 
 			END IF;
 		END IF;
 	END IF;
