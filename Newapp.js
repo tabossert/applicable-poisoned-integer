@@ -754,7 +754,7 @@ app.post('/api/getDayClasses/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id,service,' + req.body.day + ' FROM classes WHERE gymid = ' + req.body.gid + ' AND `' + req.body.day + '` IS NOT NULL AND `' + req.body.day + '` <> ""', function(err, result, fields) {
+  rmysql.query('SELECT id,service,price,' + req.body.day + ' FROM classes WHERE gymid = ' + req.body.gid + ' AND `' + req.body.day + '` IS NOT NULL AND `' + req.body.day + '` <> ""', function(err, result, fields) {
     if(err) {
       res.send('{"status": "failed", "message": "no matching gym"}');
     } else {
