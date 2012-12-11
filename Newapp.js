@@ -553,7 +553,7 @@ app.post('/api/userSignup/', function(req, res){
               if (err) {
                 res.send('{"status": "failed", "message": "unable to add user"}');
               } else {
-	        wmysql.query('INSERT INTO balance (userid,amount,automatic,refillamount) VALUES(' + result.insertId + ',0,false,0)', function(err, result, fields) {
+	        wmysql.query('INSERT INTO balance (userid,automatic,refillamount,minamount) VALUES(' + result.insertId + ',false,0,0)', function(err, result, fields) {
 	          if (err) {
                 res.send('{"status": "failed", "message": "unable to add user"}');
               } else {
