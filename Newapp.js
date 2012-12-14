@@ -126,8 +126,9 @@ var CFclient = cloudfiles.createClient(CFconfig);
 // API config settings
 var engageAPI = janrain('8ebd390177383a0bd31e55ba97dfd27ec20c3eaf');
 var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
+var stripeKey = 'sk_test_fYUN8cMnv3xKCaTZjUG0Jxpv';
 
-
+var stripe = require('stripe')(stripeKey);
 
 
  // ## CORS middleware
@@ -186,6 +187,17 @@ app.get('/', function(req, res){
     title: 'ZuneFit',
   });
 });		
+
+
+app.get('/api/healthMe/', function(req, res){
+  wmysql.query('SELECT id FROM transactions LIMIT 1', function(err, result, fields) {
+    if(err || result.length < 1) {
+      res.send('"status": "failed"');
+    } else {
+      res.send('"status": "success');
+    }
+  });
+});
 
 
 app.get('/api/gymSearch/:type/:value/:state', function(req, res){
@@ -437,7 +449,7 @@ app.get('/api/userPreferences/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,u.city,u.state,u.zipcode,b.amount,b.automatic,b.refillamount,b.schedule,CONVERT(AES_DECRYPT(u.phone,"' + salt + '") USING utf8) AS phone FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields){
+  rmysql.query('SELECT CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,CONVERT(AES_DECRYPT(u.address2,"' + salt + '") USING utf8) AS address2,u.city,u.state,u.zipcode,b.amount,b.automatic,b.refillamount,b.schedule,CONVERT(AES_DECRYPT(u.phone,"' + salt + '") USING utf8) AS phone FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields){
   if (err) {
     res.send('{"status": "failed", "message": "unable to retreive"}');
   } else {
@@ -597,6 +609,24 @@ app.post('/api/userSignout/', function(req, res){
 });
 
 
+app.get('/api/getMessage/', function(req, res) {
+  try {
+    check(req.header('ltype')).isAlphanumeric();
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.send('{"status": "failed", "message":"' + e.message + '"}');
+  }
+  rmysql.query('SELECT m.id,m.message FROM messages INNER JOIN users u ON m.id = u.last_message WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(err || result.length < 1) {
+      res.send('{"status": "failed", "message": "no new messages"}');
+    } else {
+      wmysql.
+      res.send(result);
+    }
+  });  
+});
+
+
 app.post('/api/gymLogin/', function(req, res){
   try {
     check(req.body.username).notEmpty().len(1,12).isAlphanumeric()
@@ -634,7 +664,7 @@ app.post('/api/updateUserPreferences/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE users SET first_name = ' + wmysql.escape(req.body.first_name) + ', last_name = ' + wmysql.escape(req.body.last_name) + ', address = AES_ENCRYPT("' + req.body.address + '","' + salt + '"), city = ' + wmysql.escape(req.body.city) + ', state = ' + wmysql.escape(req.body.state) + ', zipcode = "' + req.body.zipcode + '" WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE users SET first_name = ' + wmysql.escape(req.body.first_name) + ', last_name = ' + wmysql.escape(req.body.last_name) + ', address = AES_ENCRYPT("' + req.body.address + '","' + salt + '"), address2 = AES_ENCRYPT("' + req.body.address2 + '", "' + salt + '"), city = ' + wmysql.escape(req.body.city) + ', state = ' + wmysql.escape(req.body.state) + ', zipcode = "' + req.body.zipcode + '" WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) { 
       res.send('{"status": "failed", "message": "unable to update"}');
     } else {
@@ -666,6 +696,15 @@ app.post('/api/addEvent/', function(req, res){
         } else if (result[0].openSpots < 1) {
           res.send('{"status": "failed", "message": "class full"}');
         } else {
+          rmysql.query('SELECT b.refillamount FROM users u INNER JOIN balance b ON u.id = b.userid WHERE b.minamount > u.balance - ' + price + ' AND b.automatic = true', function(err, result, fields) {
+            if(result.length > 0)
+            {
+              //STUB for submitting payment
+              if(success) {
+                wmysql.query('CALL refillBalance(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ')');
+              }
+            }
+          });
           wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
             if(err) {
               res.send('{"status": "failed", "message": "unable to add event"}');
@@ -1178,19 +1217,32 @@ app.post('/api/paymentTransaction/', function(req, res) {
   try {
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
-    check(req.body.refid).notEmpty().isNumeric()
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
   rmysql.query('SELECT id AS uid FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-  if (err) {
-    res.send('{"status": "failed", "message": "no user matched"}');
-  } else {
-    wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + result[0].uid + ',"' + req.body.refid + '",NOW())', function(err, result, fields) {
-        if (err) {
-         res.send('{"status": "failed", "message": "unable to add"}');
+    if (err) {
+      res.send('{"status": "failed", "message": "no user matched"}');
+    } else {
+      var uid = result[0].uid;
+      stripe.charges.retrieve(req.body.refid, function(err,charge) {
+        console.log(charge);
+        if(err) {
+          console.log("Couldn't retrieve charge");
         } else {
-          res.send('{"stats": "success"}');  
+          wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + uid + ',"' + wmysql.escape(req.body.refid) + '",NOW())', function(err, result, fields) {
+            if (err) {
+              res.send('{"status": "failed", "message": "unable to add transaction"}');
+            } else {
+              wmysql.query('UPDATE users SET balance = balance + ' + charge.amount/100 + ' WHERE id = ' + uid, function(err, result, fields) {
+                if(err) {
+                  res.send('{"status": "failed", "message": "unable to update balance"}');
+                } else {
+                  res.send('{"stats": "success"}');
+                }
+              });  
+            }
+          });
         }
       });
     }
@@ -1477,10 +1529,24 @@ app.post('/api/processBilling/', function(req, res){
   console.log('Caught exception: ' + err);
 });*/
 
-// Set Server to listen on specified ports
-http.createServer(app).listen(81);
-console.log("started server on 81");
+var cluster = require('cluster');
+var http = require('http');
+var numCPUs = require('os').cpus().length;
 
-https.createServer(options, app).listen(444);
-console.log("started server on 444");
+if (cluster.isMaster) {
+  // Fork workers.
+  for (var i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
 
+  cluster.on('exit', function(worker, code, signal) {
+    console.log('worker ' + worker.process.pid + ' died');
+  });
+} else {
+  // Set Server to listen on specified ports
+  http.createServer(app).listen(81);
+  console.log("started server on 81");
+
+  https.createServer(options, app).listen(444);
+  console.log("started server on 444");
+}

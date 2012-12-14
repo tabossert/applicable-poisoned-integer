@@ -72,7 +72,9 @@ var cordinatesModel = mongoose.model('cordinates', cordinates);
 // API config settings
 var engageAPI = janrain('8ebd390177383a0bd31e55ba97dfd27ec20c3eaf');
 var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
+var stripeKey = 'sk_test_fYUN8cMnv3xKCaTZjUG0Jxpv';
 
+var stripe = require('stripe')(stripeKey);
 
 
 var cloudfiles = require('cloudfiles');
@@ -150,6 +152,17 @@ app.get('/', function(req, res){
     title: 'ZuneFit',
   });
 });		
+
+
+app.get('/api/healthMe/', function(req, res){
+  wmysql.query('SELECT id FROM transactions LIMIT 1', function(err, result, fields) {
+    if(err || result.length < 1) {
+      res.send('"status": "failed"');
+    } else {
+      res.send('"status": "success');
+    }
+  });
+});
 
 
 app.get('/api/gymSearch/:type/:value/:state', function(req, res){
@@ -365,7 +378,7 @@ app.get('/api/paymentMethods/', function(req, res){
 
 
 app.get('/api/userPreferences/', function(req, res){
-  rmysql.query('SELECT AES_DECRYPT(u.email,"' + salt + '") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"' + salt + '") AS address,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.schedule,CONVERT(AES_DECRYPT(u.phone,"' + salt + '") USING utf8) AS phone FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields){
+  rmysql.query('SELECT AES_DECRYPT(u.email,"' + salt + '") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"' + salt + '") AS address,AES_DECRYPT(u.address2,"' + salt + '") AS address2,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.schedule,CONVERT(AES_DECRYPT(u.phone,"' + salt + '") USING utf8) AS phone FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields){
   if (err) {
     res.send('{"status": "failed", "message": "Unable to Retrieve"}');
   } else {
@@ -580,7 +593,7 @@ app.post('/api/gymLogin/', function(req, res){
 
 
 app.post('/api/updateUserPreferences/', function(req, res){
-  wmysql.query('UPDATE users SET email = AES_ENCRYPT("' + req.body.email + '","' + salt + '"), first_name = "' + req.body.first_name + '", last_name = "' + req.body.last_name + '", address = AES_ENCRYPT("' + req.body.address + '","' + salt + '"), city = "' + req.body.city + '", state = "' + req.body.state + '", zipcode = "' + req.body.zipcode + '" WHERE ' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE users SET email = AES_ENCRYPT("' + req.body.email + '","' + salt + '"), first_name = "' + req.body.first_name + '", last_name = "' + req.body.last_name + '", address = AES_ENCRYPT("' + req.body.address + '","' + salt + '"), address2 = AES_ENCRYPT("' + req.body.address2 + '","' + salt + '"), city = "' + req.body.city + '", state = "' + req.body.state + '", zipcode = "' + req.body.zipcode + '" WHERE ' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err) { 
       res.send('{"status": "failed", "message": "Unable to update"}');
     } else {
@@ -981,15 +994,29 @@ app.get('/api/gymStats/', function(req, res){
 
 
 app.post('/api/paymentTransaction/', function(req, res) {
-  rmysql.query('SELECT id AS uid FROM users WHERE ' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
-  if (err) {
-    res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
-  } else {
-    wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + result[0].uid + ',"' + req.body.refid + '",NOW())', function(err, result, fields) {
-        if (err) {
-         res.send('{"status": "failed", "message":"' + res.send(err) + '"}');
+  rmysql.query('SELECT id AS uid FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+    if (err) {
+      res.send('{"status": "failed", "message": "no user matched"}');
+    } else {
+      var uid = result[0].uid;
+      stripe.charges.retrieve(req.body.refid, function(err,charge) {
+        console.log(charge);
+        if(err) {
+          console.log("Couldn't retrieve charge");
         } else {
-          res.send('{"stats": "success"}');  
+          wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + uid + ',"' + req.body.refid + '",NOW())', function(err, result, fields) {
+            if (err) {
+              res.send('{"status": "failed", "message": "unable to add transaction"}');
+            } else {
+              wmysql.query('UPDATE users SET balance = balance + ' + charge.amount/100 + ' WHERE id = ' + uid, function(err, result, fields) {
+                if(err) {
+                  res.send('{"status": "failed", "message": "unable to update balance"}');
+                } else {
+                  res.send('{"stats": "success"}');
+                }
+              });  
+            }
+          });
         }
       });
     }
