@@ -898,7 +898,7 @@ app.get('/api/gymBalance/', function(req, res){
 
 
 app.post('/api/gymSchedule/', function(req, res){
-    rmysql.query('SELECT u.id AS uid,s.id AS sid,u.first_name,u.last_name,s.redeemed,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = "' + req.header('token') + '" AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
+    rmysql.query('SELECT u.id AS uid,s.id AS sid,u.first_name,u.last_name,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = "' + req.header('token') + '" AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "Unable to get schedule"}');
     } else {

@@ -1008,6 +1008,7 @@ app.post('/api/updateGymProfile/', function(req, res){
   });
 });
 
+
 app.post('/api/addGymUser/', function(req, res){
   try {
     check(req.header('token')).notNull();
@@ -1091,7 +1092,7 @@ app.post('/api/gymSchedule/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-    rmysql.query('SELECT u.id AS uid,s.id AS sid,u.first_name,u.last_name,s.redeemed,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s/.datetime', function(err, result, fields) {
+    rmysql.query('SELECT u.id AS uid,s.id AS sid,u.first_name,u.last_name,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s/.datetime', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "unable to retreive"}');
     } else {
