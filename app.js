@@ -245,7 +245,7 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
   }
     function runQuery(query,where,callback){
       console.log(where);
-      rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus FROM gyms g ' + query + where, function(err, result, fields) {
+      rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
       console.log('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email FROM gyms g ' + query + where);
       if (err) {
         res.send('{"status": "failed", "message": "No gym matched"}');
@@ -286,7 +286,7 @@ app.post('/api/gymId/', function(req, res) {
 
 
 app.get('/api/gymInfo/:gymId', function(req, res){
-  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate,image,facebook,twitter,googleplus FROM gyms WHERE id = "' + req.params.gymId + '"', function(err, result, fields) {
+  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate,image,facebook,twitter,googleplus,url FROM gyms WHERE id = "' + req.params.gymId + '"', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "No Gym matched ID"}');
     } else {
@@ -849,7 +849,7 @@ app.post('/api/addGymImage/', function(req, res){
 
 
 app.post('/api/updateGymProfile/', function(req, res){
-  wmysql.query('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid set g.name = "' + req.body.name + '",g.address = "' + req.body.address + '",g.city = "' + req.body.city + '",g.state = "' + req.body.state + '",g.zipcode = "' + req.body.zipcode + '",g.phone = "' + req.body.phone + '",g.email = "' + req.body.email + '",g.contact = "' + req.body.contact + '",g.image = "' + req.body.image + '",g.facebook = "' + req.body.facebook + '",g.twitter = "' + req.body.twitter + '",g.googleplus = "' + req.body.googleplus + '",g.complete = true WHERE gu.token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid set g.name = "' + req.body.name + '",g.address = "' + req.body.address + '",g.city = "' + req.body.city + '",g.state = "' + req.body.state + '",g.zipcode = "' + req.body.zipcode + '",g.phone = "' + req.body.phone + '",g.email = "' + req.body.email + '",g.contact = "' + req.body.contact + '",g.image = "' + req.body.image + '",g.facebook = "' + req.body.facebook + '",g.twitter = "' + req.body.twitter + '",g.googleplus = "' + req.body.googleplus + '",g.url = "' + req.body.url + '",g.complete = true WHERE gu.token = "' + req.header('token') + '"', function(err, result, fields) {
       if (err) {
         res.send('{"status": "failed", "message": "Unable to update"}');
       } else {

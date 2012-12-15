@@ -280,7 +280,7 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
   }
     function runQuery(query,where,callback){
       console.log(where);
-      rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus FROM gyms g ' + query + where, function(err, result, fields) {
+      rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
       console.log('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email FROM gyms g ' + query + where);
       if (err) {
         res.send('{"status": "failed", "message": "No gym matched"}');
@@ -325,7 +325,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate,image,facebook,twitter,googleplus FROM gyms WHERE id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
+  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate,image,facebook,twitter,googleplus,url FROM gyms WHERE id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "no gym matches"}');
     } else {
@@ -616,11 +616,15 @@ app.get('/api/getMessage/', function(req, res) {
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  rmysql.query('SELECT m.id,m.message FROM messages INNER JOIN users u ON m.id = u.last_message WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  rmysql.query('SELECT m.id,m.message FROM messages m INNER JOIN users u ON m.id = u.last_message WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
       res.send('{"status": "failed", "message": "no new messages"}');
     } else {
-      wmysql.
+      wmysql.query('UPDATE users SET last_message = last_message + 1 WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+        if(err) {
+          res.send('{"status": "failed", "message": "unable to update last message viewed"}');
+        }
+      });
       res.send(result);
     }
   });  
@@ -962,7 +966,7 @@ app.post('/api/updateGymProfile/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-  wmysql.query('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid set g.address = ' + wmysql.escape(req.body.address) + ',g.city = ' + wmysql.escape(req.body.city) + ',g.state = ' + wmysql.escape(req.body.state) + ',g.zipcode = "' + req.body.zipcode + '",g.phone = "' + req.body.phone + '",g.email = "' + req.body.email + '",g.contact = "' + wmysql.escape(req.body.contact) + '",g.image = "' + wmysql.escape(req.body.image) + '",g.facebook = "' + wmysql.escape(req.body.facebook) + '",g.twitter = "' + wmysql.escape(req.body.twitter) + '",g.googleplus = "' + wmysql.escape(req.body.googleplus) + '",g.complete = true WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid set g.address = ' + wmysql.escape(req.body.address) + ',g.city = ' + wmysql.escape(req.body.city) + ',g.state = ' + wmysql.escape(req.body.state) + ',g.zipcode = "' + req.body.zipcode + '",g.phone = "' + req.body.phone + '",g.email = "' + req.body.email + '",g.contact = "' + wmysql.escape(req.body.contact) + '",g.image = "' + wmysql.escape(req.body.image) + '",g.facebook = "' + wmysql.escape(req.body.facebook) + '",g.twitter = "' + wmysql.escape(req.body.twitter) + '",g.googleplus = "' + wmysql.escape(req.body.googleplus) + '",g.url = "' + wmysql.escape(req.body.url) + '",g.complete = true WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "unable to update gym"}');
     } else {
