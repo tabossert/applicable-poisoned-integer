@@ -859,17 +859,20 @@ app.post('/api/updateGymProfile/', function(req, res){
           } else {
             geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
 	             cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
-	               if(!p)
-	                 res.send('{"status": "failed", "message":"No Document Found"}');  
-	               else { 
-	                 console.log(lat);
-	                 console.log(lng);
+	               if(!p) {
+	                 var gymLoc = new cordinatesModel({ gymid: req.body.gid, loc: {lat: lat, lng: lng }});
+                     gymLoc.save(function (err) {
+                       if(err)
+                         res.send('{"status": "failed", "message": "Unable to add geo cordinates"}');
+                       else   
+                         res.send('{"status": "success"}');
+                    });
+	               } else { 
 	                 p.loc.lat = lat;
-	                 p.loc.lng = lng;
-	    
+	                 p.loc.lng = lng;  
 	                 p.save(function(err) {
 	                   if(err) 
-	                     res.send('{"status": "failed", "message": "Unable to update"}');
+	                     res.send('{"status": "failed", "message": "Unable to update geo cordinates"}');
 	                   else
 	                     res.send('{"status": "success"}');
                 });

@@ -979,26 +979,34 @@ app.post('/api/updateGymProfile/', function(req, res){
               res.send('{"status": "failed", "message": "unable to update disbursement"}');
             } else {
               geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
-              cord = new cordinatesModel({
-                "gymid" : req.body.gymid,
-                "loc" : {"lat" : lat, "lng" : lng},
+               cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
+                 if(!p) {
+                   var gymLoc = new cordinatesModel({ gymid: req.body.gid, loc: {lat: lat, lng: lng }});
+                     gymLoc.save(function (err) {
+                       if(err)
+                         res.send('{"status": "failed", "message": "Unable to add geo cordinates"}');
+                       else   
+                         res.send('{"status": "success"}');
+                    });
+                  } else { 
+                   p.loc.lat = lat;
+                   p.loc.lng = lng;  
+                   p.save(function(err) {
+                     if(err) 
+                       res.send('{"status": "failed", "message": "Unable to update geo cordinates"}');
+                     else
+                       res.send('{"status": "success"}');
+                    });
+                  }
                 });
-              cord.save(function (err) {
-              if (err) {
-                res.send('{"status": "failed", "message": "unable to update geo location"}');
-              } else {
-                res.send('{"status": "success"}');
-              }
-             });
-           });
-          }
-        });
-       } 
-     });
-    }
-  }); 
+              });
+            } 
+          });
+        }
+      });
+    } 
+  });
 });
-
 
 app.post('/api/addGymUser/', function(req, res){
   try {
