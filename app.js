@@ -334,7 +334,7 @@ app.get('/api/balance/', function(req, res){
 
 
 app.post('/api/updatePayment/', function(req, res){
-    wmysql.query('UPDATE balance b INNER JOIN users u ON b.userid = u.id SET refillamount =  "' + req.body.refillamount + '",automatic = "' + req.body.automatic + '", schedule = "' + req.body.schedule + '" WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
+  wmysql.query('UPDATE balance b INNER JOIN users u ON b.userid = u.id SET refillamount =  ' + req.body.refillamount + ',minamount = ' + req.body.minamount + ',automatic = ' + req.body.automatic + ', cToken = "' + req.body.cToken + '" WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message":"unable to update"}');
     } else {
