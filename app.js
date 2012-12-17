@@ -378,7 +378,7 @@ app.get('/api/paymentMethods/', function(req, res){
 
 
 app.get('/api/userPreferences/', function(req, res){
-  rmysql.query('SELECT AES_DECRYPT(u.email,"' + salt + '") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"' + salt + '") AS address,AES_DECRYPT(u.address2,"' + salt + '") AS address2,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.schedule,CONVERT(AES_DECRYPT(u.phone,"' + salt + '") USING utf8) AS phone FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields){
+  rmysql.query('SELECT AES_DECRYPT(u.email,"' + salt + '") AS email,u.first_name,u.last_name,AES_DECRYPT(u.address,"' + salt + '") AS address,AES_DECRYPT(u.address2,"' + salt + '") AS address2,u.city,u.state,u.zipcode, b.amount,b.automatic,b.refillamount,b.minamount,b.cToken,CONVERT(AES_DECRYPT(u.phone,"' + salt + '") USING utf8) AS phone FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.' + req.header('ltype') + '_token = "' + req.header('token') + '"', function(err, result, fields){
   if (err) {
     res.send('{"status": "failed", "message": "Unable to Retrieve"}');
   } else {
