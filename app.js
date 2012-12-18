@@ -24,14 +24,14 @@ var WHOST = 'localhost';
 var WPORT = 3306;
 var WMYSQL_USER = 'zunefit';
 var WMYSQL_PASS = 'zunefit';
-var WDATABASE = 'zunefitNew';
+var WDATABASE = 'zunefit';
 
 
 var RHOST = 'localhost';
 var RPORT = 3306;
 var RMYSQL_USER = 'zunefit';
 var RMYSQL_PASS = 'zunefit';
-var RDATABASE = 'zunefitNew';
+var RDATABASE = 'zunefit';
 
 var wmysql = _mysql.createConnection({
     host: WHOST,
@@ -368,12 +368,11 @@ app.get('/api/balance/', function(req, res){
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
   rmysql.query('SELECT balance FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-  if (err) {
+  if (err || result.length < 1) {
      res.send('{"status": "failed", "message": "no user found"}');
     } else {
       console.log(result);
       res.send(result);
-
     }
   });
 });
@@ -450,7 +449,7 @@ app.get('/api/userPreferences/', function(req, res){
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
   rmysql.query('SELECT CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,CONVERT(AES_DECRYPT(u.address2,"' + salt + '") USING utf8) AS address2,u.city,u.state,u.zipcode,b.automatic,b.refillamount,b.minamount,b.cToken,CONVERT(AES_DECRYPT(u.phone,"' + salt + '") USING utf8) AS phone FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields){
-  if (err) {
+  if (err || result.length < 1) {
     res.send('{"status": "failed", "message": "unable to retreive"}');
   } else {
     res.send(result);
@@ -469,7 +468,7 @@ app.post('/api/setPinCode/', function(req, res) {
   }
   try {
     wmysql.query('UPDATE users SET phone = AES_ENCRYPT("' + req.body.phone + '","' + salt + '"), pincode = ' + wmysql.escape(req.body.pincode) + ' WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-      if (result.length < 1) {
+      if (err || result.length < 1) {
         res.send('{"status": "failed", "message": "invalid token"}',401);
       } else {
         res.send('{"status": "success", "phone": "' + req.body.phone + '"}');
@@ -697,7 +696,7 @@ app.post('/api/addEvent/', function(req, res){
           rmysql.query('SELECT b.refillamount,b.cToken FROM users u INNER JOIN balance b ON u.id = b.userid WHERE b.minamount > u.balance - ' + price + ' AND b.automatic = true AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
             if(result.length > 0)
             {
-              stripe.charges.create(result[0].cToken, function(err,charge) {
+              stripe.charges.create({ amount: result[0].amount, currency: 'usd', customer: result[0].cToken }, function(err,charge) {
                 if(err) {
                   res.send("refill not setup");
                 } else {
@@ -1095,7 +1094,8 @@ app.post('/api/gymSchedule/', function(req, res){
   } catch (e) {
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
-    rmysql.query('SELECT u.id AS uid,s.id AS sid,u.first_name,u.last_name,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s/.datetime', function(err, result, fields) {
+    console.log()
+    rmysql.query('SELECT u.id AS uid,s.id AS sid,c.id as cid,u.first_name,u.last_name,c.service,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
     if (err) {
       res.send('{"status": "failed", "message": "unable to retreive"}');
     } else {
@@ -1123,7 +1123,7 @@ app.post('/api/addTag/', function(req, res){
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
   rmysql.query('SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
-    if(result.length < 1) { 
+    if(err || result.length < 1) { 
       res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
       wmysql.query('INSERT INTO gymTags (gymid,tag) VALUES (' + req.body.gymid + ',' + wmysql.escape(req.body.tag) + ')', function(err, result, fields) {
@@ -1145,7 +1145,7 @@ app.del('/api/deleteTag/', function(req, res){
     res.send('{"status": "failed", "message":"' + e.message + '"}');
   }
   rmysql.query('SELECT gymid FROM gymUsers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
-    if(result.length < 1) { 
+    if(err || result.length < 1) { 
       res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
       wmysql.query('DELETE FROM gymTags WHERE id = ' + req.body.tid, function(err, result, fields) {
@@ -1308,7 +1308,7 @@ app.post('/api/newReward/', function(req, res) {
 
 app.post('/api/aLogin/', function(req, res) {
    rmysql.query('SELECT au.userid FROM users u INNER JOIN adminUsers au ON u.id = au.userid WHERE u.email = AES_ENCRYPT("' + req.body.username + '","' + salt + '") AND au.password = ' + rmysql.escape(req.body.password), function(err, result, fields) {
-    if(result.length < 1) {
+    if(err || result.length < 1) {
       res.send('{"status": "failed", "message":"Invalid username/password"}',401);
     } else {
       require('crypto').randomBytes(48, function(ex, buf) {
@@ -1560,9 +1560,9 @@ if (cluster.isMaster) {
   });
 } else {
   // Set Server to listen on specified ports
-  http.createServer(app).listen(81);
-  console.log("started server on 81");
+  http.createServer(app).listen(80);
+  console.log("started server on 80");
 
-  https.createServer(options, app).listen(444);
-  console.log("started server on 444");
+  https.createServer(options, app).listen(443);
+  console.log("started server on 443");
 }
