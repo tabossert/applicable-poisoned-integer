@@ -1,9 +1,4 @@
--- --------------------------------------------------------------------------------
--- Routine DDL
--- Note: comments before and after the routine body will not be stored by the server
--- --------------------------------------------------------------------------------
-DELIMITER $$
- 
+DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `addEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN price DECIMAL(10,2), IN classid int(11), IN gymid int(10), IN dateTime datetime)
 BEGIN
  
@@ -14,7 +9,7 @@ DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
   SELECT transMess;
-  -- ERROR
+  
 END;
  
 SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
@@ -32,7 +27,7 @@ IF ROW_COUNT() > 0 THEN
     PREPARE pQuery FROM @aQuery;
     EXECUTE pQuery USING @gymid,@classid,@price,@dateTime;
     IF ROW_COUNT() < 1 THEN
-        SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
+        SET transMess = CONCAT('"status": "failed", "message": "unable to add event2"');
         ROLLBACK;
     ELSE
 		SET sID = LAST_INSERT_ID();
@@ -50,7 +45,7 @@ IF ROW_COUNT() > 0 THEN
 			PREPARE pQuery FROM @aQuery;
 			EXECUTE pQuery USING @gymid,@sID;
 			IF ROW_COUNT() < 1 THEN
-				SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
+				SET transMess = CONCAT('"status": "failed", "message": "unable to add event3"');
 				ROLLBACK;
 			ELSE
 				CALL refillBalance(ltype, token);
@@ -66,4 +61,5 @@ END IF;
 SELECT transMess;
 COMMIT;
 
-END
+END;;
+DELIMITER ;

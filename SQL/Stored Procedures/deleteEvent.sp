@@ -1,9 +1,4 @@
--- --------------------------------------------------------------------------------
--- Routine DDL
--- Note: comments before and after the routine body will not be stored by the server
--- --------------------------------------------------------------------------------
-DELIMITER $$
-
+DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `deleteEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN sid int(11))
 BEGIN
 
@@ -14,7 +9,7 @@ DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
   SELECT transMess;
-  -- ERROR
+  
 END;
 
 SET transMess = "unable to delete event";
@@ -51,4 +46,5 @@ END IF;
 COMMIT;
 
 SELECT transMess;
-END
+END;;
+DELIMITER ;

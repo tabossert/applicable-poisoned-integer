@@ -1,9 +1,4 @@
--- --------------------------------------------------------------------------------
--- Routine DDL
--- Note: comments before and after the routine body will not be stored by the server
--- --------------------------------------------------------------------------------
-DELIMITER $$
-
+DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `processBilling`(IN token VARCHAR(100), IN gymid int(11), IN paction int(11), IN amount DECIMAL(10,2))
 BEGIN
 
@@ -12,7 +7,7 @@ DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
   SELECT transMess;
-  -- ERROR
+  
 END;
 
 START TRANSACTION;
@@ -41,4 +36,5 @@ END IF;
 COMMIT;
 SELECT transMess;
 
-END
+END;;
+DELIMITER ;

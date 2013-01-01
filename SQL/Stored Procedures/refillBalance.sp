@@ -1,9 +1,4 @@
--- --------------------------------------------------------------------------------
--- Routine DDL
--- Note: comments before and after the routine body will not be stored by the server
--- --------------------------------------------------------------------------------
-DELIMITER $$
- 
+DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `refillBalance`(IN ltype VARCHAR(15), IN token VARCHAR(100))
 BEGIN
  
@@ -13,10 +8,11 @@ BEGIN
 DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
-  -- ERROR
+  
 END;
 
 START TRANSACTION;
+
 
 SET @aQuery = CONCAT('UPDATE users u INNER JOIN balance b ON u.id = b.userid SET u.balance = u.balance + b.refillamount WHERE automatic = 1 AND u.balance < b.minamount AND ',ltype,'_token = "',token,'"');
 PREPARE pQuery FROM @aQuery;
@@ -32,6 +28,8 @@ ELSE
 	ROLLBACK;
 END IF;
 
+
 COMMIT;
 
-END
+END;;
+DELIMITER ;
