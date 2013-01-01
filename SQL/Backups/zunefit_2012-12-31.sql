@@ -5,9 +5,9 @@
 # http://www.sequelpro.com/
 # http://code.google.com/p/sequel-pro/
 #
-# Host: 127.0.0.1 (MySQL 5.1.61)
+# Host: instance35168.db.xeround.com (MySQL 5.1.42)
 # Database: zunefit
-# Generation Time: 2012-12-19 02:33:50 +0000
+# Generation Time: 2013-01-01 00:37:55 +0000
 # ************************************************************
 
 
@@ -20,19 +20,32 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 
-# Dump of table adminUsers
+# Dump of table actions
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `adminUsers`;
+DROP TABLE IF EXISTS `actions`;
 
-CREATE TABLE `adminUsers` (
+CREATE TABLE `actions` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `action` varchar(20) COLLATE utf8_bin NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+
+
+# Dump of table adminusers
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `adminusers`;
+
+CREATE TABLE `adminusers` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `userid` int(10) NOT NULL,
   `password` varbinary(50) NOT NULL DEFAULT '',
   `token` varchar(100) COLLATE utf8_bin DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_userid` (`userid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -51,7 +64,7 @@ CREATE TABLE `balance` (
   `cToken` varchar(50) COLLATE utf8_bin DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_userid` (`userid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -66,11 +79,12 @@ CREATE TABLE `checkin` (
   `gymid` int(10) NOT NULL,
   `datetime` datetime NOT NULL,
   `scheduleid` int(10) NOT NULL,
+  `classid` int(10) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_scheduleid_userid` (`scheduleid`,`userid`),
   KEY `id_userid` (`userid`),
   KEY `id_gymid` (`gymid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -97,7 +111,7 @@ CREATE TABLE `classes` (
   `featured` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `id_gymid` (`gymid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -113,16 +127,16 @@ CREATE TABLE `disbursement` (
   `paylimit` decimal(10,2) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id_gymid` (`gymid`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
-# Dump of table gBillingAudit
+# Dump of table gbillingaudit
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `gBillingAudit`;
+DROP TABLE IF EXISTS `gbillingaudit`;
 
-CREATE TABLE `gBillingAudit` (
+CREATE TABLE `gbillingaudit` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `gid` int(10) NOT NULL,
   `action` int(2) NOT NULL,
@@ -130,23 +144,23 @@ CREATE TABLE `gBillingAudit` (
   `timestamp` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id_gid` (`gid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
-# Dump of table gymBilling
+# Dump of table gymbilling
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `gymBilling`;
+DROP TABLE IF EXISTS `gymbilling`;
 
-CREATE TABLE `gymBilling` (
+CREATE TABLE `gymbilling` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `gid` int(10) NOT NULL,
   `balance` decimal(10,2) NOT NULL,
   `zcom` decimal(10,2) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id_gid` (`gid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -180,32 +194,32 @@ CREATE TABLE `gyms` (
   KEY `id_zipcode` (`zipcode`),
   KEY `id_city` (`city`),
   KEY `id_state` (`state`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
-# Dump of table gymTags
+# Dump of table gymtags
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `gymTags`;
+DROP TABLE IF EXISTS `gymtags`;
 
-CREATE TABLE `gymTags` (
+CREATE TABLE `gymtags` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `gymid` int(10) NOT NULL,
   `tag` varchar(25) COLLATE utf8_bin NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `udx_gymid_tag` (`gymid`,`tag`),
   KEY `id_gymid` (`gymid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
-# Dump of table gymUsers
+# Dump of table gymusers
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `gymUsers`;
+DROP TABLE IF EXISTS `gymusers`;
 
-CREATE TABLE `gymUsers` (
+CREATE TABLE `gymusers` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `gymid` int(10) NOT NULL,
   `token` varchar(100) COLLATE utf8_bin NOT NULL DEFAULT '',
@@ -219,7 +233,7 @@ CREATE TABLE `gymUsers` (
   UNIQUE KEY `idx_username` (`username`),
   KEY `id_gymid` (`gymid`),
   KEY `id_group` (`groupid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -240,7 +254,7 @@ CREATE TABLE `hours` (
   `sunday` varchar(25) COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id_gymid` (`gymid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -254,7 +268,7 @@ CREATE TABLE `messages` (
   `message` varchar(50) COLLATE utf8_bin NOT NULL DEFAULT '',
   `timestamp` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -267,7 +281,7 @@ CREATE TABLE `paymentmethod` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `type` varchar(20) COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -286,7 +300,7 @@ CREATE TABLE `rewards` (
   UNIQUE KEY `idx_rewards` (`userid`,`network`),
   KEY `id_userid` (`userid`),
   KEY `id_applied` (`applied`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -308,7 +322,7 @@ CREATE TABLE `schedule` (
   KEY `id_gymid` (`gymid`),
   KEY `id_classid` (`classid`),
   KEY `id_classid_datetime` (`classid`,`datetime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -322,11 +336,12 @@ CREATE TABLE `stats` (
   `gymid` int(10) NOT NULL,
   `userid` int(10) NOT NULL,
   `type` int(10) NOT NULL,
+  `datetime` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_gymid` (`gymid`),
   KEY `id_userid` (`userid`),
   KEY `id_type` (`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -343,16 +358,16 @@ CREATE TABLE `transactions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_refid` (`refid`),
   KEY `id_userid` (`userid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
-# Dump of table uBillingAudit
+# Dump of table ubillingaudit
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `uBillingAudit`;
+DROP TABLE IF EXISTS `ubillingaudit`;
 
-CREATE TABLE `uBillingAudit` (
+CREATE TABLE `ubillingaudit` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `uid` int(10) NOT NULL,
   `action` int(2) NOT NULL,
@@ -360,7 +375,7 @@ CREATE TABLE `uBillingAudit` (
   `timestamp` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id_uid` (`uid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -392,7 +407,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   KEY `id_webToken` (`web_token`),
   KEY `id_mobileToken` (`mobile_token`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=Xeround DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 
@@ -402,12 +417,67 @@ CREATE TABLE `users` (
 --
 DELIMITER ;;
 
+# Dump of PROCEDURE deleteEvent
+# ------------------------------------------------------------
+
+/*!50003 DROP PROCEDURE IF EXISTS `deleteEvent` */;;
+/*!50003 SET SESSION SQL_MODE=""*/;;
+/*!50003 CREATE*/ /*!50020 DEFINER=`zunefit`@`%`*/ /*!50003 PROCEDURE `deleteEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN sid int(11))
+BEGIN
+
+
+
+DECLARE transMess VARCHAR(100);
+DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
+BEGIN
+  ROLLBACK;
+  SELECT transMess;
+  
+END;
+
+SET transMess = "unable to delete event";
+START TRANSACTION;
+
+SET @sid = sid;
+SET @aQuery = CONCAT('UPDATE users u INNER JOIN schedule s ON u.id = s.userid SET u.balance = u.balance + s.price WHERE s.id = ? AND ',ltype,'_token = "',token,'"');
+PREPARE pQuery FROM @aQuery;
+EXECUTE pQuery USING @sid; 
+IF ROW_COUNT() > 0 THEN
+	SET @sID = sID;
+	SET @aQuery = CONCAT('UPDATE gymBilling gb INNER JOIN schedule s ON gb.gid = s.gymid INNER JOIN gyms g ON g.id = gb.gid SET zcom = gb.balance + round(s.price * g.commission/100,2), gb.balance = gb.balance + round(s.price + s.price * g.commission/100,2) WHERE gb.gid = s.gymid AND s.id = ?');
+	PREPARE pQuery FROM @aQuery;
+	EXECUTE pQuery USING @sID;
+	IF ROW_COUNT() < 1 THEN
+		SET transMess = "unable to delete event";
+		ROLLBACK;
+	ELSE
+		SET @sID = sID;
+		SET @aQuery = CONCAT('DELETE s FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.id = ? AND u.',ltype,'_token = "',token,'"');
+		PREPARE pQuery FROM @aQuery;
+		EXECUTE pQuery USING @sID;
+		IF ROW_COUNT() > 0 THEN
+			SET transMess = "success";
+			ROLLBACK;
+		END IF;
+	END IF;
+ELSE
+	SET transMess = "invalid token or activity does not exist";
+	ROLLBACK;
+END IF;
+
+
+COMMIT;
+
+SELECT transMess;
+END */;;
+
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
 # Dump of PROCEDURE addEvent
 # ------------------------------------------------------------
 
 /*!50003 DROP PROCEDURE IF EXISTS `addEvent` */;;
 /*!50003 SET SESSION SQL_MODE=""*/;;
-/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `addEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN price DECIMAL(10,2), IN classid int(11), IN gymid int(10), IN dateTime datetime)
+/*!50003 CREATE*/ /*!50020 DEFINER=`zunefit`@`%`*/ /*!50003 PROCEDURE `addEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN price DECIMAL(10,2), IN classid int(11), IN gymid int(10), IN dateTime datetime)
 BEGIN
  
  
@@ -417,10 +487,10 @@ DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
   SELECT transMess;
-  -- ERROR
+  
 END;
  
-SET transMess = CONCAT('"status": "failed", "message": "unable to add event1"');
+SET transMess = CONCAT('"status": "failed", "message": "unable to add event"');
 START TRANSACTION;
 SET @price = price;
 SET @aQuery = CONCAT('INSERT INTO uBillingAudit (uid,action,amount,timestamp) SELECT id,0,?,NOW() FROM users WHERE ',ltype,'_token = "', token,'"');
@@ -472,116 +542,12 @@ COMMIT;
 END */;;
 
 /*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
-# Dump of PROCEDURE checkin
-# ------------------------------------------------------------
-
-/*!50003 DROP PROCEDURE IF EXISTS `checkin` */;;
-/*!50003 SET SESSION SQL_MODE=""*/;;
-/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `checkin`(IN phoneNum VARCHAR(10), IN pin VARCHAR(50), IN gymid int(10), IN dateTime datetime)
-BEGIN
-
-DECLARE transMess VARCHAR(100);
-DECLARE uid INT;
-DECLARE sid INT;
-DECLARE EXIT HANDLER FOR SQLEXCEPTION,SQLWARNING
-BEGIN
-  ROLLBACK;
-  SELECT transMess;
-  -- ERROR
-END;
-
-
-START TRANSACTION;
-
-SET transMess = "invalid phone/pincode";
-SELECT u.id INTO uid FROM users u WHERE phone = AES_ENCRYPT(phoneNum,'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$') AND u.pincode = pin;
-IF FOUND_ROWS() > 0 THEN
-	SET transMess = "no scheduled activity";
-	SELECT s.id INTO sid FROM users u INNER JOIN schedule s ON u.id = s.userid WHERE u.id = uid AND s.datetime >= NOW() AND s.datetime <= NOW() + INTERVAL 30 MINUTE ORDER BY s.datetime LIMIT 1;
-	IF FOUND_ROWS() < 1 THEN
-		SELECT s.id INTO sid FROM users u INNER JOIN schedule s ON u.id = s.userid WHERE u.id = uid AND DATE(s.datetime) = DATE(dateTime) AND c.daypass = 1 ORDER BY s.datetime LIMIT 1;
-		IF FOUND_ROWS() < 1 THEN
-			ROLLBACK;
-		END IF;
-	END IF;
-	set transMess = "already checked in";
-	INSERT INTO checkin (userid,gymid,datetime,scheduleid) VALUES (uid,gymid,NOW(),sid);
-	IF ROW_COUNT() < 1 THEN
-		set transMess = "checkin failed";
-		ROLLBACK;
-	END IF;
-ELSE
-	set transMess = "invalid phone/pincode";
-	ROLLBACK;
-END IF;
-
-COMMIT;
-SET transMess = "success";
-SELECT transMess;
-END */;;
-
-/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
-# Dump of PROCEDURE deleteEvent
-# ------------------------------------------------------------
-
-/*!50003 DROP PROCEDURE IF EXISTS `deleteEvent` */;;
-/*!50003 SET SESSION SQL_MODE=""*/;;
-/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `deleteEvent`(IN ltype VARCHAR(15), IN token VARCHAR(100), IN sid int(11))
-BEGIN
-
-
-
-DECLARE transMess VARCHAR(100);
-DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
-BEGIN
-  ROLLBACK;
-  SELECT transMess;
-  -- ERROR
-END;
-
-SET transMess = "unable to delete event";
-START TRANSACTION;
-
-SET @sid = sid;
-SET @aQuery = CONCAT('UPDATE users u INNER JOIN schedule s ON u.id = s.userid SET u.balance = u.balance + s.price WHERE s.id = ? AND ',ltype,'_token = "',token,'"');
-PREPARE pQuery FROM @aQuery;
-EXECUTE pQuery USING @sid; 
-IF ROW_COUNT() > 0 THEN
-	SET @sID = sID;
-	SET @aQuery = CONCAT('UPDATE gymBilling gb INNER JOIN schedule s ON gb.gid = s.gymid INNER JOIN gyms g ON g.id = gb.gid SET zcom = gb.balance + round(s.price * g.commission/100,2), gb.balance = gb.balance + round(s.price + s.price * g.commission/100,2) WHERE gb.gid = s.gymid AND s.id = ?');
-	PREPARE pQuery FROM @aQuery;
-	EXECUTE pQuery USING @sID;
-	IF ROW_COUNT() < 1 THEN
-		SET transMess = "unable to delete event";
-		ROLLBACK;
-	ELSE
-		SET @sID = sID;
-		SET @aQuery = CONCAT('DELETE s FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.id = ? AND u.',ltype,'_token = "',token,'"');
-		PREPARE pQuery FROM @aQuery;
-		EXECUTE pQuery USING @sID;
-		IF ROW_COUNT() > 0 THEN
-			SET transMess = "success";
-			ROLLBACK;
-		END IF;
-	END IF;
-ELSE
-	SET transMess = "invalid token or activity does not exist";
-	ROLLBACK;
-END IF;
-
-
-COMMIT;
-
-SELECT transMess;
-END */;;
-
-/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
 # Dump of PROCEDURE processBilling
 # ------------------------------------------------------------
 
 /*!50003 DROP PROCEDURE IF EXISTS `processBilling` */;;
 /*!50003 SET SESSION SQL_MODE=""*/;;
-/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `processBilling`(IN token VARCHAR(100), IN gymid int(11), IN paction int(11), IN amount DECIMAL(10,2))
+/*!50003 CREATE*/ /*!50020 DEFINER=`zunefit`@`%`*/ /*!50003 PROCEDURE `processBilling`(IN token VARCHAR(100), IN gymid int(11), IN paction int(11), IN amount DECIMAL(10,2))
 BEGIN
 
 DECLARE transMess VARCHAR(100);
@@ -589,7 +555,7 @@ DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
   SELECT transMess;
-  -- ERROR
+  
 END;
 
 START TRANSACTION;
@@ -626,7 +592,7 @@ END */;;
 
 /*!50003 DROP PROCEDURE IF EXISTS `refillBalance` */;;
 /*!50003 SET SESSION SQL_MODE=""*/;;
-/*!50003 CREATE*/ /*!50020 DEFINER=`root`@`localhost`*/ /*!50003 PROCEDURE `refillBalance`(IN ltype VARCHAR(15), IN token VARCHAR(100))
+/*!50003 CREATE*/ /*!50020 DEFINER=`zunefit`@`%`*/ /*!50003 PROCEDURE `refillBalance`(IN ltype VARCHAR(15), IN token VARCHAR(100))
 BEGIN
  
  
@@ -635,10 +601,11 @@ BEGIN
 DECLARE EXIT HANDLER FOR SQLEXCEPTION,NOT FOUND,SQLWARNING
 BEGIN
   ROLLBACK;
-  -- ERROR
+  
 END;
 
 START TRANSACTION;
+
 
 SET @aQuery = CONCAT('UPDATE users u INNER JOIN balance b ON u.id = b.userid SET u.balance = u.balance + b.refillamount WHERE automatic = 1 AND u.balance < b.minamount AND ',ltype,'_token = "',token,'"');
 PREPARE pQuery FROM @aQuery;
@@ -654,8 +621,59 @@ ELSE
 	ROLLBACK;
 END IF;
 
+
 COMMIT;
 
+END */;;
+
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
+# Dump of PROCEDURE checkin
+# ------------------------------------------------------------
+
+/*!50003 DROP PROCEDURE IF EXISTS `checkin` */;;
+/*!50003 SET SESSION SQL_MODE=""*/;;
+/*!50003 CREATE*/ /*!50020 DEFINER=`zunefit`@`%`*/ /*!50003 PROCEDURE `checkin`(IN phoneNum VARCHAR(10), IN pin VARCHAR(50), IN gymid int(10), IN dateTime datetime)
+BEGIN
+
+DECLARE transMess VARCHAR(100);
+DECLARE uid INT;
+DECLARE sid INT;
+DECLARE cid INT;
+DECLARE EXIT HANDLER FOR SQLEXCEPTION,SQLWARNING
+BEGIN
+  ROLLBACK;
+  SELECT transMess;
+  
+END;
+
+
+START TRANSACTION;
+
+SET transMess = "invalid phone/pincode";
+SELECT u.id INTO uid FROM users u WHERE phone = AES_ENCRYPT(phoneNum,'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$') AND u.pincode = pin;
+IF FOUND_ROWS() > 0 THEN
+	SET transMess = "no scheduled activity";
+	SELECT s.id,s.classid INTO sid,cid FROM users u INNER JOIN schedule s ON u.id = s.userid WHERE u.id = uid AND s.datetime >= NOW() AND s.datetime <= NOW() + INTERVAL 30 MINUTE ORDER BY s.datetime LIMIT 1;
+	IF FOUND_ROWS() < 1 THEN
+		SELECT s.id,s.classid INTO sid,cid FROM users u INNER JOIN schedule s ON u.id = s.userid WHERE u.id = uid AND DATE(s.datetime) = DATE(dateTime) AND c.daypass = 1 ORDER BY s.datetime LIMIT 1;
+		IF FOUND_ROWS() < 1 THEN
+			ROLLBACK;
+		END IF;
+	END IF;
+	set transMess = "already checked in";
+	INSERT INTO checkin (userid,gymid,datetime,scheduleid,classid) VALUES (uid,gymid,NOW(),sid,cid);
+	IF ROW_COUNT() < 1 THEN
+		set transMess = "checkin failed";
+		ROLLBACK;
+	END IF;
+ELSE
+	set transMess = "invalid phone/pincode";
+	ROLLBACK;
+END IF;
+
+COMMIT;
+SET transMess = "success";
+SELECT transMess;
 END */;;
 
 /*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;;
