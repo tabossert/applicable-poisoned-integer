@@ -161,7 +161,7 @@ var options = {
 
 // Build initial express Server
 var app = module.exports = express();
-var createDomain = domain.create;
+
 
 
 // Set express server options
@@ -177,11 +177,13 @@ app.configure(function(){
   app.use(express.methodOverride());
   app.use(app.router);
   app.use(function(req, res, next) {
+    var createDomain = domain.create;
     createDomain.on('error', function(err) {
       res.statusCode = 500;
       res.end(err.message + '\n');
 
       createDomain.dispose();
+      next(err);
     });
 
     createDomain.enter()
