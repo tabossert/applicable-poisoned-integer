@@ -177,14 +177,14 @@ app.configure(function(){
   app.use(express.methodOverride());
   app.use(app.router);
   app.use(function(req, res, next) {
-    domain.on('error', function(err) {
+    createDomain.on('error', function(err) {
       res.statusCode = 500;
       res.end(err.message + '\n');
 
-      domain.dispose();
+      createDomain.dispose();
     });
 
-    domain.enter()
+    createDomain.enter()
     next();
   });
 });
