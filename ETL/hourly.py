@@ -31,6 +31,7 @@ try:
             zcur.execute("INSERT INTO barbell.gymhourly (gymid,visits,views,reservations,amount,datetime) SELECT " + str(row[0]) + ",(SELECT count(id) FROM tmpchkin WHERE gymid = ts.gymid) AS visits,(SELECT count(id) FROM tmpstats WHERE type = 0 AND gymid = ts.gymid) AS views,count(ts.id) AS reservations,SUM(price) AS amount,'" + prevHour + "' AS datetime FROM tmpsch ts WHERE ts.gymid = " + str(row[0]))
 
         zcur.execute("INSERT INTO barbell.hourly (visits,signups,reservations,amount,datetime) SELECT (SELECT count(id) FROM tmpstats) AS visits,(SELECT count(id) FROM users) AS signups,count(id) AS reservations,SUM(price) AS amount,'" + prevHour + "' AS datetime FROM tmpsch")
+        zcur.execute("INSERT INTO barbell.repeats (userid,gymid,classid,visits) SELECT userid,gymid,classid,@visits := COUNT(userid) FROM tmpchkin GROUP BY userid,classid ON DUPLICATE KEY UPDATE visits=visits+@visits")
 
         # Drop Temp Tables
         zcur.execute("DROP TABLE tmpgym")

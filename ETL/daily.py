@@ -20,6 +20,10 @@ try:
         bcur.execute("INSERT INTO barbell.classdaily (gymid,classid,visits,reservations,amount,datetime) SELECT gymid,classid,SUM(visits) AS visits,SUM(reservations) AS reservations,SUM(amount) AS amount,'" + prevDay + "' AS datetime FROM barbell.classhourly WHERE datetime > '" + prevDay + "' AND datetime < '" + curDay + "' GROUP by classid")
         bcur.execute("INSERT INTO barbell.daily (visits,signups,reservations,amount,datetime) SELECT SUM(visits) AS visits,SUM(signups) AS signups,SUM(reservations) AS reservations,SUM(amount) AS amount,'" + prevDay + "' AS datetime FROM barbell.hourly WHERE datetime > '" + prevDay + "' AND datetime < '" + curDay + "'")
 
+        bcur.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
+        bcur.execute("INSERT INTO barbell.demographic (male,female,city,state,zipcode,total,datetime) SELECT SUM(IF(sex = 'm', 1, 0)) AS male, SUM(IF(sex = 'f', 1, 0)) AS female,city,state,zipcode,COUNT(zipcode) AS total,'" + prevDay + "' AS datetime FROM zunefit.users GROUP BY zipcode")
+        bcur.execute("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
     bcon.commit()
     bcur.close()
 

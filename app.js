@@ -16,6 +16,7 @@ var express = require('express')
   , moment = require('moment')
   , mongoose = require("mongoose")
   , geo = require('geo')
+  , geoip = require('geoip-lite')
   , janrain = require('janrain-api')
   , check = require('validator').check
   , sanitize = require('validator').sanitize
@@ -177,15 +178,14 @@ app.configure(function(){
   app.use(express.methodOverride());
   app.use(app.router);
   app.use(function(req, res, next) {
-    var createDomain = domain.create;
+    var createDomain = domain.create();
     createDomain.on('error', function(err) {
       res.statusCode = 500;
       res.end(err.message + '\n');
-
+      console.log("Req Domain Error: " + err);
+      process.exit();
       createDomain.dispose();
-      next(err);
     });
-
     createDomain.enter()
     next();
   });
@@ -356,6 +356,8 @@ app.get('/api/gymInfo/:gymId', function(req, res){
 
 
 app.get('/api/featuredGyms/', function(req, res){
+  var loc = geoip.lookup(req.connection.remoteAddress);
+  //AND city = "' + loc.city + '" AND state = "' + loc.region + '"'
   rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email FROM gyms WHERE featured = true', function(err, result, fields) {
     if (err || result.length < 1) {
      res.end('{"status": "failed", "message": "unable to retreive"}');
@@ -424,7 +426,7 @@ app.get('/api/disbursement/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT type,paylimit FROM disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  rmysql.query('SELECT d.paymenttype,d.paylimit,d.type FROM disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if (err || result.length < 1) {
       res.end('{"status": "failed", "message": "no gym matched"}');
     } else {
@@ -437,13 +439,13 @@ app.get('/api/disbursement/', function(req, res){
 app.post('/api/updateDisbursement/', function(req, res){
   try {
     check(req.header('token')).notNull();
-    check(req.body.paylimit).notNull().isNumeric()
-    check(req.body.type).notNull().isNumeric()
+    check(req.body.paymenttype).isNumeric()
+    check(req.body.type).isNumeric()
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) set d.type = ' + rmysql.escape(req.body.type) + ',d.paylimit = ' + rmysql.escape(req.body.paylimit) + ' WHERE gu.groupid = 1 AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) set d.paymenttype = ' + rmysql.escape(req.body.paymenttype) + ',d.paylimit = ' + rmysql.escape(req.body.paylimit) + ',d.type = ' + rmysql.escape(req.body.type) + ' WHERE gu.groupid = 1 AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if (err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to update"}');
     } else {
@@ -993,7 +995,7 @@ app.post('/api/addGym/', function(req, res){
               if(err || result.length < 1) {
                 res.end('{"status": "failed", "message": "unable to add day pass class"}');
               } else {
-                wmysql.query('INSERT INTO disbursement (gymid,type,paylimit) SELECT id,"check",1000 FROM gyms WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+                wmysql.query('INSERT INTO disbursement (gymid,paymenttype,paylimit,type) SELECT id,1,300,1 FROM gyms WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
                   if (err || result.length < 1) {
                     res.end('{"status": "failed", "message": "unable to update disbursement"}');
                   } else {
@@ -1041,7 +1043,8 @@ app.post('/api/updateGymProfile/', function(req, res){
     check(req.body.phone).len(10,10).isNumeric()
     check(req.body.email).isEmail()
     check(req.body.zipcode).len(5,5).isNumeric()
-    check(req.body.limit).isNumeric() 
+    check(req.body.type).isNumeric()
+    check(req.body.paymenttype).isNumeric()  
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
@@ -1050,11 +1053,11 @@ app.post('/api/updateGymProfile/', function(req, res){
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to update gym"}');
     } else {
-      wmysql.query('UPDATE hours h INNER JOIN gymUsers gu ON h.gymid = gu.gymid set monday = "' + req.body.monday + '",tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '",thursday = "' + req.body.thursday + '",friday = "' + req.body.friday + '",saturday = "' + req.body.saturday + '",sunday = "' + req.body.sunday + '" WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+      wmysql.query('UPDATE hours h INNER JOIN gymUsers gu ON h.gymid = gu.gymid set monday = "' + wmysql.escape(req.body.monday) + '",tuesday = "' + wmysql.escape(req.body.tuesday) + '", wednesday = "' + wmysql.escape(req.body.wednesday) + '",thursday = "' + wmysql.escape(req.body.thursday) + '",friday = "' + wmysql.escape(req.body.friday) + '",saturday = "' + wmysql.escape(req.body.saturday) + '",sunday = "' + wmysql.escape(req.body.sunday) + '" WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "unable to update hours"}');
       } else {
-        wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu set d.type = ' + wmysql.escape(req.body.type) + ',d.paylimit = ' + req.body.limit + ' WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+        wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu set d.paymenttype = ' + wmysql.escape(req.body.paymenttype) + ',d.paylimit = ' + wmysql.escape(req.body.limit) + ',d.type = ' + wmysql.escape(req.body.type) + ' WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
             if(err || result.length < 1) {
               res.end('{"status": "failed", "message": "unable to update disbursement"}');
             } else {
@@ -1448,7 +1451,7 @@ app.post('/api/getFC/', function(req, res){
   }
   rmysql.query('SELECT id FROM adminUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(result.length > 0) {
-      rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.email,g.phone,g.contact,gb.balance,p.type,d.paylimit FROM gyms g INNER JOIN gymBilling gb ON g.id = gb.gid INNER JOIN disbursement d ON g.id = d.gymid INNER JOIN paymentmethod p ON p.id = d.type ORDER BY g.id DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
+      rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.email,g.phone,g.contact,gb.balance,d.paymenttype,d.paylimit,d.type FROM gyms g INNER JOIN gymBilling gb ON g.id = gb.gid INNER JOIN disbursement d ON g.id = d.gymid INNER JOIN paymentmethod p ON p.id = d.type ORDER BY g.id DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
         if(err || result.length < 1) {
           res.end('{"status": "failed", "message": "unable to retreive"}');  
         } else {
