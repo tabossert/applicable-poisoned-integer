@@ -69,10 +69,20 @@ SELECT service,duration,ROUND(AVG(price),2) AS price,datetime FROM classhourly W
 SELECT ROUND(AVG(reservations),0) AS avgres,datetime FROM classhourly WHERE datetime >= '2012-12-31 03:00:00' AND datetime < '2012-12-31 05:00:00' GROUP BY datetime 
 
 # Get MAX to show which hour is the most popular for a class
-SELECT classid,MAX(reservations) AS reservations,datetime FROM classhourly WHERE classid = 10 AND datetime >= '2012-12-31 03:00:00' AND datetime < '2012-12-31 05:00:00' ORDER BY datetime
+SELECT t1.classid,t1.reservations,t1.datetime FROM classhourly t1
+  INNER JOIN (SELECT classid,MAX(reservations) AS res,datetime AS max_date
+        FROM classhourly WHERE gymid = 22 AND datetime >= '2012-12-31 03:00:00' AND datetime < '2012-12-31 05:00:00'
+        GROUP BY classid
+        ) t2
+    ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid
 
 # Get Max to show which day is the most popular for a day
-SELECT classid,MAX(reservations) AS reservations,DAYNAME(datetime) as dayofweek FROM classdaily WHERE classid = 10 AND datetime >= '2012-12-31' AND datetime < '2013-01-01' ORDER BY datetime
+SELECT t1.classid,t1.reservations,DAYNAME(t1.datetime) FROM classdaily t1
+  INNER JOIN (SELECT classid,MAX(reservations) AS res
+        FROM classdaily WHERE gymid = 22 AND datetime >= '2012-12-31' AND datetime < '2013-01-02'
+        GROUP BY classid
+        ) t2
+    ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid
 
 # Repeat user counts
 INSERT INTO barbell.repeats (userid,gymid,classid,visits) SELECT userid,gymid,classid,@visits := COUNT(userid) FROM tmpchkin GROUP BY userid,classid ON DUPLICATE KEY UPDATE visits=visits+@visits
@@ -80,17 +90,22 @@ INSERT INTO barbell.repeats (userid,gymid,classid,visits) SELECT userid,gymid,cl
 
 
 
-# Query to get Max by hour for all, probably not needed
+
+
+
+# Query to get Max by hour classes by gym by datetime
 SELECT t1.classid,t1.reservations,t1.datetime FROM classhourly t1
   INNER JOIN (SELECT classid,MAX(reservations) AS res,datetime AS max_date
-        FROM classhourly
+        FROM classhourly WHERE gymid = 22 AND datetime >= '2012-12-31 03:00:00' AND datetime < '2012-12-31 05:00:00'
         GROUP BY classid
         ) t2
-    ON t1.reservations = t2.res AND t1.classid = t2.classid 
-# Query to get Max by day for all, probably not needed
+    ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid
+# Query to get Max by day classes by gym by datetime
 SELECT t1.classid,t1.reservations,DAYNAME(t1.datetime) FROM classdaily t1
   INNER JOIN (SELECT classid,MAX(reservations) AS res
-        FROM classdaily
+        FROM classdaily WHERE gymid = 22 AND datetime >= '2012-12-31' AND datetime < '2013-01-02'
         GROUP BY classid
         ) t2
-    ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid   
+    ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid
+
+ 
