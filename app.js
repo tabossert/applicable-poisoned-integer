@@ -35,6 +35,14 @@ var RMYSQL_USER = 'zunefitAPI';
 var RMYSQL_PASS = 'F1tn3ss is WHERE! its @';
 var RDATABASE = 'zunefit';
 
+
+var AHOST = 'instance35168.db.xeround.com';
+var APORT = 3719;
+var AMYSQL_USER = 'zunefitHouse';
+var AMYSQL_PASS = '10Reps f0r perf3Ction!';
+var ADATABASE = 'zunefit';
+
+
 var wmysql = _mysql.createConnection({
     host: WHOST,
     port: WPORT,
@@ -1395,6 +1403,161 @@ app.post('/api/newReward/', function(req, res) {
   } else {
     res.end('{"status": "failed", "message":"Not a valid network"}')
   }
+});
+
+
+// Analytics calls
+
+app.post('/api/barbell/pcbh/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      rmysql.query('SELECT t1.classid,t1.reservations,t1.datetime FROM barbell.classhourly t1 INNER JOIN (SELECT classid,MAX(reservations) AS res,datetime AS max_date FROM barbell.classhourly WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY classid) t2 ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid', function(err, result, fields) {
+        if (err || result.length < 1) {
+          res.end('{"status": "failed", "message": "unable to retrieve"}');
+        } else {
+          res.send(result);
+        }      
+      });
+    }
+  });
+});
+
+
+app.post('/api/barbell/pcbd/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      rmysql.query('SELECT t1.classid,t1.reservations,DAYNAME(t1.datetime) FROM barbell.classdaily t1 INNER JOIN (SELECT classid,MAX(reservations) AS res FROM barbell.classdaily WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY classid) t2 ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid', function(err, result, fields) {
+        if (err || result.length < 1) {
+          res.end('{"status": "failed", "message": "unable to retrieve"}');
+        } else {
+          res.send(result);
+        }      
+      });
+    }
+  });
+});
+
+
+app.post('/api/barbell/appc/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      rmysql.query('SELECT service,duration,ROUND(AVG(price),2) AS price,datetime FROM barbel.classhourly WHERE datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY service,duration', function(err, result, fields) {
+        if (err || result.length < 1) {
+          res.end('{"status": "failed", "message": "unable to retrieve"}');
+        } else {
+          res.send(result);
+        }      
+      });
+    }
+  });
+});
+
+
+app.post('/api/barbell/arph/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      rmysql.query('SELECT ROUND(AVG(reservations),0) AS avgres,datetime FROM barbell.classhourly WHERE datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY datetime', function(err, result, fields) {
+        if (err || result.length < 1) {
+          res.end('{"status": "failed", "message": "unable to retrieve"}');
+        } else {
+          res.send(result);
+        }      
+      });
+    }
+  });
+});
+
+
+app.post('/api/barbell/rcbc/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      rmysql.query('SELECT userid,gymid,classid,visits FROM barbell.repeats WHERE gymid = ' + result[0].gymid + ' GROUP BY userid,classid', function(err, result, fields) {
+        if (err || result.length < 1) {
+          res.end('{"status": "failed", "message": "unable to retrieve"}');
+        } else {
+          res.send(result);
+        }      
+      });
+    }
+  });
+});
+
+
+app.post('/api/barbell/cdbp/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    check(req.body.param).isAlphanumeric();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      try {
+        rmysql.query('SELECT male,female,city,state,zipcode,total,datetime FROM barbell.demographic WHERE `' + req.body.param + '` = ' + rmysql.escape(req.body.value), function(err, result, fields) {
+          if (err || result.length < 1) {
+            res.end('{"status": "failed", "message": "unable to retrieve"}');
+          } else {
+            res.send(result);
+          }      
+        });
+      } catch(e) {
+        res.end('{"status": "failed", "message": "invalid param"}');
+      }
+    }
+  });
 });
 
 
