@@ -1273,7 +1273,7 @@ app.del('/api/deleteAccount/', function(req, res){
 });
 
 
-app.post('/api/gymView', function(req, res){
+app.post('/api/gymView/', function(req, res){
   try {
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
@@ -1284,15 +1284,15 @@ app.post('/api/gymView', function(req, res){
   }
   wmysql.query('INSERT INTO stats (gymid,userid,type,datetime) SELECT ' + req.body.gymid + ',id,0,NOW() FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "unable to add gymview"}');
+      res.end('{"status": "failed", "message": "unable to add view"}');
     } else { 
       res.end('{"status": "success"}');
       }
    });
 });
 
-
-app.post('/api/gymVisit', function(req, res){
+/* No Longer used
+app.post('/api/gymVisit/', function(req, res){
   try {
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
@@ -1309,7 +1309,7 @@ app.post('/api/gymVisit', function(req, res){
       }
    });
 });
-
+*/
 
 app.get('/api/gymStats/', function(req, res){
   try {
@@ -1555,6 +1555,100 @@ app.post('/api/barbell/cdbp/', function(req, res){
         });
       } catch(e) {
         res.end('{"status": "failed", "message": "invalid param"}');
+      }
+    }
+  });
+});
+
+
+app.post('/api/barbell/cdbt/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    //check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    check(req.body.duration).isAlphanumeric();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      try {
+        if(req.body.duration == 'month') {
+          rmysql.query('SELECT gymid,classid,service,visits,reservations,amount,datetime FROM classmonthly WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 MONTH)', function(err, result, fields) {
+            if (err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to retrieve"}');
+            } else {
+              res.send(result);
+            }      
+          });
+        } else if(req.body.duration == "week") {
+          rmysql.query('SELECT gymid,classid,service,visits,reservations,duration,amount,datetime FROM classdaily WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 WEEK)', function(err, result, fields) {
+            if (err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to retrieve"}');
+            } else {
+              res.send(result);
+            }      
+          });
+        } else {
+          rmysql.query('SELECT gymid,classid,service,visits,reservations,duration,price,amount,datetime FROM classhourly WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < DATE_ADD("' + req.body.start + '",INTERVAL 1 DAY)', function(err, result, fields) {
+            if (err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to retrieve"}');
+            } else {
+              res.send(result);
+            }      
+          });
+        }
+      } catch(e) {
+        res.end('{"status": "failed", "message": "unable to retrieve"}');
+      }
+    }
+  });
+});
+
+
+app.post('/api/barbell/gdbt/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    //check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    check(req.body.duration).isAlphanumeric();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.end('{"status": "failed", "message": "invalid token"}');
+    } else {
+      try {
+        if(req.body.duration == 'month') {
+          rmysql.query('SELECT gymid,SUM(amount) FROM classmonthly WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 MONTH)', function(err, result, fields) {
+            if (err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to retrieve"}');
+            } else {
+              res.send(result);
+            }      
+          });
+        } else if(req.body.duration == "week") {
+          rmysql.query('SELECT gymid,SUM(amount) FROM classdaily WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 WEEK)', function(err, result, fields) {
+            if (err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to retrieve"}');
+            } else {
+              res.send(result);
+            }      
+          });
+        } else {
+          rmysql.query('SELECT gymid,SUM(amount) FROM classhourly WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < DATE_ADD("' + req.body.start + '",INTERVAL 1 DAY)', function(err, result, fields) {
+            if (err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to retrieve"}');
+            } else {
+              res.send(result);
+            }      
+          });
+        }
+      } catch(e) {
+        res.end('{"status": "failed", "message": "unable to retrieve"}');
       }
     }
   });
