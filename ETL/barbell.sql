@@ -6,7 +6,7 @@ CREATE TABLE `tmpgym` SELECT id,city,state,zipcode FROM gyms order by id;
 CREATE TABLE `tmpstats` SELECT * FROM stats
 
 # Create temp table for schedule for an hour period
-CREATE TABLE `tmpsch` SELECT s.id,s.userid,s.gymid,s.classid,c.service,s.price,c.duration,s.datetime,c.spots,c.featured FROM schedule s INNER JOIN classes c ON s.classid = c.id
+CREATE TABLE `tmpsch` SELECT s.id,s.userid,s.gymid,s.classid,c.service,s.price,c.duration,s.datetime,c.spots,c.featured FROM schedule s INNER JOIN classes c ON s.classid = c.id WHERE created >= '2012-12-18 12:00:00' AND created < '2012-12-18 13:00:00'
 
 # Create temp table for checkins for an hour period
 CREATE TABLE `tmpchkin` SELECT * FROM checkin
@@ -124,3 +124,5 @@ SELECT gymid,SUM(amount) FROM classmonthly WHERE gymid = 22 AND datetime >= DATE
 
 
 SELECT gymid,classid,service,visits,reservations,amount,datetime FROM classdaily WHERE gymid = 22 AND datetime >= DATE("2012-12-01") AND datetime < DATE_ADD(DATE("2012-12-01"),INTERVAL 1 MONTH)
+
+
