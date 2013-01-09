@@ -589,7 +589,6 @@ app.post('/api/userCheckin/', function(req, res){
 
 
 app.post('/api/userSignup/', function(req, res){
-  console.log(req);
   try {
     engageAPI.authInfo(req.header('token'), true, function(err, data) {
       if(err) {
@@ -598,7 +597,7 @@ app.post('/api/userSignup/', function(req, res){
         return;
       } else {
         try {
-          console.log(data);
+          console.log(data.profile.email);
           wmysql.query('SELECT id AS uid,email FROM users WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
             require('crypto').randomBytes(48, function(ex, buf) {
               var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
