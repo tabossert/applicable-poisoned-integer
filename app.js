@@ -266,9 +266,7 @@ app.get('/api/gymSearch/:type/:value/:state', function(req, res){
 });
 
 
-
 app.post('/api/gymSearchAdvanced/', function(req, res){
-
   function getLoc(address,distance,callback) {
     var maxDistance = distance/69;
     var idArr = ""
@@ -385,7 +383,6 @@ app.get('/api/gymInfo/:gymId', function(req, res){
 });
 
 
-
 app.get('/api/featuredGyms/', function(req, res){
   var loc = geoip.lookup(req.connection.remoteAddress);
   //AND city = "' + loc.city + '" AND state = "' + loc.region + '"'
@@ -399,7 +396,6 @@ app.get('/api/featuredGyms/', function(req, res){
 });
 
 
-
 app.get('/api/featuredWorkouts/', function(req, res){
   rmysql.query('SELECT id,gymid,service FROM classes WHERE featured = true', function(err, result, fields) {
     if (err || result.length < 1) {
@@ -409,7 +405,6 @@ app.get('/api/featuredWorkouts/', function(req, res){
     }
   });
 });
-
 
 
 app.get('/api/balance/', function(req, res){
@@ -560,7 +555,6 @@ app.post('/api/userSchedule/', function(req, res){
 });
 
 
-
 app.post('/api/userCheckin/', function(req, res){
   try {
     check(req.body.phone).len(10,10).isNumeric()
@@ -583,9 +577,6 @@ app.post('/api/userCheckin/', function(req, res){
     }
   });    
 });
-
-
-
 
 
 app.post('/api/userSignup/', function(req, res){
@@ -782,7 +773,7 @@ app.post('/api/addEvent/', function(req, res){
                           console.log('Failure saved to log');
                         }
                       });
-                      res.end('{"status": "failed", "message": "unable to add event"}');
+                      res.end('{"status": "failed", "message": "unable to refill balance"}');
                     } else {
                       wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
                         if(err || result.length < 1) {
@@ -835,7 +826,6 @@ app.del('/api/deleteEvent/', function(req, res){
 });
 
 
-
 app.post('/api/getAllClasses/', function(req, res){
   try {
     check(req.body.offset).isNumeric();
@@ -879,7 +869,6 @@ app.post('/api/classSize/', function(req, res){
     }
   });
 });
-
 
 
 app.post('/api/getDayClasses/', function(req, res){
@@ -1041,8 +1030,14 @@ app.post('/api/addGym/', function(req, res){
   });
 });
 
-//Add token validation
+
 app.post('/api/addGymImage/', function(req, res){
+  try {
+    check(req.header('token')).notNull();  
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
   fs.writeFile('images/' + req.body.iName, new Buffer(req.body.image, "base64"), function(err) {
     CFclient.setAuth(function (err) {
       if(err) {
@@ -1181,8 +1176,6 @@ app.post('/api/deleteGymUser/', function(req, res){
 });
 
 
-
-
 app.get('/api/gymBalance/', function(req, res){
   try {
     check(req.header('token')).notNull();
@@ -1253,6 +1246,7 @@ app.post('/api/addTag/', function(req, res){
   });
 });
 
+
 app.del('/api/deleteTag/', function(req, res){
   try {
     check(req.header('token')).notNull();
@@ -1313,25 +1307,6 @@ app.post('/api/gymView/', function(req, res){
    });
 });
 
-/* No Longer used
-app.post('/api/gymVisit/', function(req, res){
-  try {
-    check(req.header('ltype')).isAlphanumeric();
-    check(req.header('token')).notNull();
-    check(req.body.gymid).isNumeric()
-  } catch (e) {
-    res.end('{"status": "failed", "message":"' + e.message + '"}');
-    return;
-  }
-  wmysql.query('INSERT INTO stats (gymid,userid,type) SELECT ' + req.body.gymid + ',id,1 FROM users WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-    if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "unable to add gymvisit"}');
-    } else { 
-      res.end('{"status": "success"}');
-      }
-   });
-});
-*/
 
 app.get('/api/gymStats/', function(req, res){
   try {
@@ -1792,7 +1767,6 @@ app.post('/api/updateEmployee/:guid', function(req, res){
 });
 
 
-
 app.post('/api/getUsers/', function(req, res){
   console.log(req.body.offset);
   console.log(req.header('token'));
@@ -1817,7 +1791,6 @@ app.post('/api/getUsers/', function(req, res){
     }
   });
 });
-
 
 
 app.get('/api/getUser/:uid', function(req, res){
@@ -1894,8 +1867,6 @@ app.post('/api/makeAdmin/', function(req, res){
     }
   });
 });
-
-
 
 
 app.post('/api/processBilling/', function(req, res){
