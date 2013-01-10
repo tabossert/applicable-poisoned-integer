@@ -16,9 +16,9 @@ try:
     with bcon:
         bcur = bcon.cursor()
 
-        bcur.execute("INSERT INTO barbell.gymmonthly (gymid,visits,views,reservations,amount,datetime) SELECT gymid,SUM(visits) AS visits,SUM(views) AS views,SUM(reservations) AS reservations,SUM(amount) AS amount,'" + prevMonth + "' AS datetime FROM barbell.gymhourly WHERE datetime > '" + prevMonth + "' AND datetime < '" + curMonth + "' GROUP BY gymid")
-        bcur.execute("INSERT INTO barbell.classmonthly (gymid,classid,service,visits,reservations,amount,datetime) SELECT gymid,classid,service,SUM(visits) AS visits,SUM(reservations) AS reservations,SUM(amount) AS amount,'" + prevMonth + "' AS datetime FROM barbell.classhourly WHERE datetime > '" + prevMonth + "' AND datetime < '" + curMonth + "' GROUP by classid")
-        bcur.execute("INSERT INTO barbell.monthly (visits,signups,reservations,amount,datetime) SELECT SUM(visits) AS visits,SUM(signups) AS signups,SUM(reservations) AS reservations,SUM(amount) AS amount,'" + prevMonth + "' AS datetime FROM barbell.hourly WHERE datetime > '" + prevMonth + "' AND datetime < '" + curMonth + "'")
+        bcur.execute("INSERT INTO barbell.gymmonthly (gymid,visits,views,reservations,amount,datetime) SELECT gymid,SUM(visits) AS visits,SUM(views) AS views,SUM(reservations) AS reservations,SUM(amount) AS amount,CONVERT_TZ('" + prevMonth + "','UTC','EST') AS datetime FROM barbell.gymhourly WHERE datetime > CONVERT_TZ('" + prevMonth + "','UTC','EST') AND datetime < CONVERT_TZ('" + curMonth + "','UTC','EST') GROUP BY gymid")
+        bcur.execute("INSERT INTO barbell.classmonthly (gymid,classid,service,visits,reservations,amount,datetime) SELECT gymid,classid,service,SUM(visits) AS visits,SUM(reservations) AS reservations,SUM(amount) AS amount,CONVERT_TZ('" + prevMonth + "','UTC','EST') AS datetime FROM barbell.classhourly WHERE datetime > CONVERT_TZ('" + prevMonth + "','UTC','EST') AND datetime < CONVERT_TZ('" + curMonth + "','UTC','EST') GROUP by classid")
+        bcur.execute("INSERT INTO barbell.monthly (visits,signups,reservations,amount,datetime) SELECT SUM(visits) AS visits,SUM(signups) AS signups,SUM(reservations) AS reservations,SUM(amount) AS amount,CONVERT_TZ('" + prevMonth + "','UTC','EST') AS datetime FROM barbell.hourly WHERE datetime > CONVERT_TZ('" + prevMonth + "','UTC','EST') AND datetime < CONVERT_TZ('" + curMonth + "','UTC','EST')")
 
     bcon.commit()
     bcur.close()
