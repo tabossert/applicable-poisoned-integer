@@ -23,19 +23,21 @@ var express = require('express')
   , expressWinston = require('express-winston')
   , winston = require('winston');
 
+
+/**
+* MySQL DB connection info and setup
+*/
 var WHOST = 'instance35168.db.xeround.com';
 var WPORT = 3719;
 var WMYSQL_USER = 'zunefitAPI';
 var WMYSQL_PASS = 'F1tn3ss is WHERE! its @';
 var WDATABASE = 'zunefit';
 
-
 var RHOST = 'instance35168.db.xeround.com';
 var RPORT = 3719;
 var RMYSQL_USER = 'zunefitAPI';
 var RMYSQL_PASS = 'F1tn3ss is WHERE! its @';
 var RDATABASE = 'zunefit';
-
 
 var AHOST = 'instance35168.db.xeround.com';
 var APORT = 3719;
@@ -51,7 +53,6 @@ var wmysql = _mysql.createConnection({
     password: WMYSQL_PASS,
 });
 
-
 var rmysql = _mysql.createConnection({
     host: RHOST,
     port: RPORT,
@@ -59,25 +60,6 @@ var rmysql = _mysql.createConnection({
     password: RMYSQL_PASS,
 });
 
-
-
-var logger = new (winston.Logger)({
-  transports: [
-    new (winston.transports.Console)({ json: false, timestamp: true }),
-    new winston.transports.File({ filename: 'logs/access.log', json: true, timestamp: true })
-  ],
-  exceptionHandlers: [
-    new (winston.transports.Console)({ json: false, timestamp: true }),
-    new winston.transports.File({ filename: 'logs/exceptions.log', json: true, timestamp: true })
-  ],
-  exitOnError: false
-});
-
-/*var winstonStream = {
-    write: function(message, encoding){
-        logger.info(message);
-    }
-};*/
 
 try {
   wmysql.connect(function(err) {
@@ -108,6 +90,7 @@ try {
 wmysql.query('use ' + WDATABASE);
 rmysql.query('use ' + RDATABASE);
 
+
 setInterval(keepAlive, 60000);
 function keepAlive() {
     wmysql.query('SELECT 1');
@@ -135,6 +118,22 @@ cordinates.index ({
 var cordinatesModel = mongoose.model('cordinates', cordinates);
 
 
+/**
+* Logging setup
+*/
+var logger = new (winston.Logger)({
+  transports: [
+    new (winston.transports.Console)({ json: false, timestamp: true }),
+    new winston.transports.File({ filename: 'logs/access.log', json: true, timestamp: true })
+  ],
+  exceptionHandlers: [
+    new (winston.transports.Console)({ json: false, timestamp: true }),
+    new winston.transports.File({ filename: 'logs/exceptions.log', json: true, timestamp: true })
+  ],
+  exitOnError: false
+});
+
+
 var cloudfiles = require('cloudfiles');
 var CFconfig = {
   auth: {
@@ -144,15 +143,14 @@ var CFconfig = {
   }
 };
 
-
 var CFcontainer = 'https://133ebe4227c90a13f1dc-8c7ec5384ed7d5bfa249897c03b2f07c.ssl.cf2.rackcdn.com/';
 var CFclient = cloudfiles.createClient(CFconfig);
+
 
 // API config settings
 var engageAPI = janrain('8ebd390177383a0bd31e55ba97dfd27ec20c3eaf');
 var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
 var stripeKey = 'sk_test_fYUN8cMnv3xKCaTZjUG0Jxpv';
-
 var stripe = require('stripe')(stripeKey);
 
 
@@ -184,16 +182,13 @@ var options = {
 var app = module.exports = express();
 
 
-
 // Set express server options
 app.configure(function(){
   app.use(allowCrossDomain);
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
   app.use(express.favicon());
-  //app.use(express.logger('dev'));
   //app.use(connect.compress());
-  //app.use(express.logger({stream:winstonStream}));
   app.use(express.static(__dirname + '/public'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
@@ -220,12 +215,6 @@ app.configure(function(){
     next();
   });
 });
-
-
-//Environment specific settings
-/*app.configure('development', function(){
-  app.use(express.errorHandler());
-});*/
 
 
 // Begin routes
@@ -347,7 +336,6 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
     runQuery(query,where,function() {});
   }
 });
-
 
 
 app.post('/api/gymId/', function(req, res) {
@@ -1222,6 +1210,7 @@ app.get('/api/getTags/:gid', function(req, res){
     }
   });  
 });
+
 
 app.post('/api/addTag/', function(req, res){
   try {
