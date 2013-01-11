@@ -5,12 +5,16 @@ __author__ = 'tbossert'
 import MySQLdb as mdb
 import sys
 from datetime import datetime, timedelta
+from pytz import timezone
 
 bcon = mdb.connect(host = 'instance35168.db.xeround.com', port = 3719, user = 'barbell', passwd = '10Reps f0r perf3Ction!', db = 'barbell')
 
+EST = pytz.timezone("US/Eastern")
 lastMonthDateTime = datetime.today() - timedelta(days = 1)
-prevMonth = lastMonthDateTime.strftime('%Y-%m-01')
-curMonth = datetime.today().strftime('%Y-%m-%d')
+UTCprevMonth = lastMonthDateTime.strftime('%Y-%m-01')
+UTCcurMonth = datetime.today().strftime('%Y-%m-%d')
+prevMonth = UTCprevMonth.astimezone(EST)
+curMonth = UTCcurMonth.astimezone(EST)
 
 try:
     with bcon:

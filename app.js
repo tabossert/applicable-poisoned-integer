@@ -1281,7 +1281,7 @@ app.del('/api/deleteAccount/', function(req, res){
   }
   wmysql.query('UPDATE users SET status = 1 WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
-     res.end('{"status": "failed", "message": "unable to delete events"}');
+     res.end('{"status": "failed", "message": "unable to delete account"}');
     } else {
       res.end('{"status": "success"}');
     }

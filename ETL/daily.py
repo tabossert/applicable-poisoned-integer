@@ -5,12 +5,16 @@ __author__ = 'tbossert'
 import MySQLdb as mdb
 import sys
 from datetime import datetime, timedelta
+from pytz import timezone
 
 bcon = mdb.connect(host = 'instance35168.db.xeround.com', port = 3719, user = 'barbell', passwd = '10Reps f0r perf3Ction!', db = 'barbell')
 
+EST = pytz.timezone("US/Eastern")
 lastDayDateTime = datetime.today() - timedelta(days = 1)
-prevDay = lastDayDateTime.strftime('%Y-%m-%d')
-curDay = datetime.today().strftime('%Y-%m-%d')
+UTCprevDay = lastDayDateTime.strftime('%Y-%m-%d')
+UTCcurDay = datetime.today().strftime('%Y-%m-%d')
+prevDay = UTCprevDay.astimezone(EST)
+curDay = UTCcurDay.astimezone(EST)
 
 try:
     with bcon:
