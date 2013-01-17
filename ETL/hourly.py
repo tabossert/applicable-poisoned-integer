@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 import pytz
 
-zcon = mdb.connect(host = 'instance35168.db.xeround.com', port = 3719, user = 'barbell', passwd = '10Reps f0r perf3Ction!', db = 'zunefit')
+zcon = mdb.connect(host = 'localhost', port = 3306, user = 'barbell', passwd = '10Reps f0r perf3Ction!', db = 'zunefit')
 
 EST = pytz.timezone('US/Eastern')
 lastHourDateTime = datetime.today() - timedelta(hours = 1)

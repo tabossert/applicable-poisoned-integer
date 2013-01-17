@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 import pytz
 
-bcon = mdb.connect(host = 'instance35168.db.xeround.com', port = 3719, user = 'barbell', passwd = '10Reps f0r perf3Ction!', db = 'barbell')
+bcon = mdb.connect(host = 'localhost', port = 3306, user = 'barbell', passwd = '10Reps f0r perf3Ction!', db = 'barbell')
 
 EST = timezone("US/Eastern")
 lastMonthDateTime = datetime.today() - timedelta(days = 1)

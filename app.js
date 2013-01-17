@@ -27,21 +27,21 @@ var express = require('express')
 /**
 * MySQL DB connection info and setup
 */
-var WHOST = 'instance35168.db.xeround.com';
-var WPORT = 3719;
+var WHOST = 'localhost';
+var WPORT = 3306;
 var WMYSQL_USER = 'zunefitAPI';
 var WMYSQL_PASS = 'F1tn3ss is WHERE! its @';
 var WDATABASE = 'zunefit';
 
-var RHOST = 'instance35168.db.xeround.com';
-var RPORT = 3719;
+var RHOST = 'localhost';
+var RPORT = 3306;
 var RMYSQL_USER = 'zunefitAPI';
 var RMYSQL_PASS = 'F1tn3ss is WHERE! its @';
 var RDATABASE = 'zunefit';
 
-var AHOST = 'instance35168.db.xeround.com';
-var APORT = 3719;
-var AMYSQL_USER = 'zunefitHouse';
+var AHOST = 'localhost';
+var APORT = 3306;
+var AMYSQL_USER = 'barbell';
 var AMYSQL_PASS = '10Reps f0r perf3Ction!';
 var ADATABASE = 'zunefit';
 
