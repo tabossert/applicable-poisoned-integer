@@ -1,7 +1,7 @@
 require 'rest_client'
 require 'json'
 
-token = '1QwgppHA6EiUejDBA5monASHABdZr38IwK_zGXIVPZa7dqiMMqOo4tpC8Wf63--b'
+token = 'ngJoqKu4NLMjnQUA7bMEnY_aSLt8paO_gw3ukVmy9MDnPrj2J2o-Esse7iw4WbHM'
 
 def getCall(uri,key,value,level)
   response = RestClient.get 'https://api.zunefit.com' + uri
@@ -82,7 +82,7 @@ a = gymSearch()
 print a
 b = gymClasses()
 print b
-c = addEvent(token,'22','21','2013-01-22 14:00:00')
+c = addEvent(token,'22','21','2013-02-25 14:00:00')
 d = parseReturn(0,c,'sid')
 print d
 e = deleteEvent(token,d)

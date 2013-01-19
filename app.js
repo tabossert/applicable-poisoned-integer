@@ -1332,7 +1332,7 @@ app.post('/api/paymentTransaction/', function(req, res) {
         if(err) {
           console.log("Couldn't retrieve charge");
         } else {
-          wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + uid + ',"' + wmysql.escape(req.body.refid) + '",NOW())', function(err, result, fields) {
+          wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + uid + ',' + wmysql.escape(req.body.refid) + ',NOW())', function(err, result, fields) {
             if(err || result.length < 1) {
               res.end('{"status": "failed", "message": "unable to add transaction"}');
             } else {
