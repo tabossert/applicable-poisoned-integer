@@ -256,40 +256,43 @@ app.get('/api/gymSearch/:type/:value/:state', function(req, res){
 
 
 app.post('/api/gymSearchAdvanced/', function(req, res){
+  var disObj = {};
   function getLoc(address,distance,callback) {
     var maxDistance = distance/69;
     var idArr = ""
     , j = 0
+    //var disObj = {};
     geo.geocoder(geo.google, address, false,  function(fAddress,lat,lng) {
     console.log(lat);
     console.log(lng);
     console.log(fAddress);
-     cordinatesModel.find({loc : { '$near': [lat, lng], '$maxDistance': maxDistance }} , function(err, result) {
-      console.log(err);
+    cordinatesModel.db.db.executeDbCommand({geoNear: "cordinates", near: [lng, lat], maxDistance: 100/3959 ,distanceMultiplier: 3959, spherical: true }, function(err,res) {
       if(err) {
         res.end('{"status": "failed", "message":"No Gym matched location"}');
       } else {
-        console.log(result);
-        result.forEach(function(index, array) {
-          if(j < 1) {
-            console.log(index);
-            idArr = idArr + index.gymid;
-            j++;
-          } else {
-            idArr = idArr + ',' + index.gymid;
+        res.documents.forEach(function(doc) {
+		      doc.results.forEach(function(obj) {
+            disObj[obj.obj.gymid] = obj.dis; 
+            if(j < 1) {
+              idArr = idArr + obj.obj.gymid;
+              j++;
+            } else {
+              idArr = idArr + ',' + obj.obj.gymid;
             }
           });
-          callback(idArr);
-         }
-        });
-      });
-    }
+		    });
+        //console.log(disObj);
+        callback(idArr);
+	     }
+	   });
+    });
+  }
 
   var i, len = 0
   , query = ''
   , where = '';
 
-  query = query + ' INNER JOIN classes p ON g.id = p.gymid';
+  query = query + ' INNER JOIN classes c ON g.id = c.gymid';
   if(req.body.workouts !== undefined) {
     var terms = req.body.workouts.split(',')
     len = terms.length;
@@ -297,9 +300,9 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
     for (i = 0; i < len; i++){
       if(i == 0)
       {
-        where = where + ' WHERE (p.service = "' + terms[i] + '"';
+        where = where + ' WHERE (c.service = "' + terms[i] + '"';
       } else {
-        where = where + ' OR p.service = "' + terms[i] + '"';
+        where = where + ' OR c.service = "' + terms[i] + '"';
       }
     }
     where = where + ')';
@@ -309,18 +312,27 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
       where = where + ' AND g.name like "%' + req.body.name + '%"';
     }
     if(req.body.rate !== undefined) {
-      where = where + ' AND p.price < ' + req.body.rate;
+      where = where + ' AND c.price < ' + req.body.rate;
     }
   } catch (e) {
     return;
   }
-    function runQuery(query,where,callback){
-      console.log(where);
-      rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
-      console.log('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email FROM gyms g ' + query + where);
-      if(err || result.length < 1) {
-        res.end('{"status": "failed", "message": "No gym matched"}');
-      } else {
+
+
+  function runQuery(query,where,callback){
+    console.log(where);
+    //rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
+    rmysql.query('SELECT g.id,count(c.id) AS level,GROUP_CONCAT(service) AS matched,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
+    console.log('SELECT g.id,count(c.id) AS level,GROUP_CONCAT(service) AS matched,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where);
+    if(err || result.length < 1) {
+      res.end('{"status": "failed", "message": "No gym matched"}');
+    } else {
+	console.log(disObj);
+	   result.forEach(function(res) {
+
+    	  res['distance'] = Math.round(10*disObj[res.id])/10;
+    	  console.log(res);
+    	});
         console.log(result);
         res.send(result);
        }
@@ -329,7 +341,7 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
 
   if(typeof(req.body.address) !== 'undefined'){
     getLoc(req.body.address,req.body.maxDistance,function(idArr) {
-      where = where + ' AND g.id IN (' + idArr + ')';
+      where = where + ' AND g.id IN (' + idArr + ') GROUP BY g.id ORDER BY level DESC, FIND_IN_SET(g.id,"' + idArr + '") ASC';
       runQuery(query,where,function() {});
      });
   } else {
@@ -372,7 +384,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
 
 
 app.get('/api/featuredGyms/', function(req, res){
-  var loc = geoip.lookup(req.connection.remoteAddress);
+  //var loc = geoip.lookup(req.connection.remoteAddress);
   //AND city = "' + loc.city + '" AND state = "' + loc.region + '"'
   rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email FROM gyms WHERE featured = true', function(err, result, fields) {
     if (err || result.length < 1) {
@@ -1077,7 +1089,7 @@ app.post('/api/updateGymProfile/', function(req, res){
               geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
                cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
                  if(!p) {
-                   var gymLoc = new cordinatesModel({ gymid: req.body.gid, loc: {lat: lat, lng: lng }});
+                   var gymLoc = new cordinatesModel({ gymid: req.body.gid, loc: {lng: lng, lat: lat }});
                      gymLoc.save(function (err) {
                        if(err)
                          res.end('{"status": "failed", "message": "Unable to add geo cordinates"}');
