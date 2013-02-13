@@ -320,18 +320,14 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
 
 
   function runQuery(query,where,callback){
-    console.log(where);
-    //rmysql.query('SELECT DISTINCT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
     rmysql.query('SELECT g.id,count(c.id) AS level,GROUP_CONCAT(service) AS matched,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
     console.log('SELECT g.id,count(c.id) AS level,GROUP_CONCAT(service) AS matched,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where);
     if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "No gym matched"}');
+      res.end('{"status": "failed", "message": "No Results"}');
     } else {
 	console.log(disObj);
 	   result.forEach(function(res) {
-
     	  res['distance'] = Math.round(10*disObj[res.id])/10;
-    	  console.log(res);
     	});
         console.log(result);
         res.send(result);
@@ -826,7 +822,7 @@ app.del('/api/deleteEvent/', function(req, res){
 });
 
 
-app.post('/api/getAllClasses/', function(req, res){
+/*app.post('/api/getAllClasses/', function(req, res){
   try {
     check(req.body.offset).isNumeric();
   } catch (e) {
@@ -840,19 +836,30 @@ app.post('/api/getAllClasses/', function(req, res){
       res.send(result);
     }
   });
-});
+});*/
 
 
-app.get('/api/getClasses/:gid', function(req, res){
+app.get('/api/getClasses/:gid/', function(req, res){
   try {
     check(req.params.gid).isNumeric();
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT id,gymid,service,duration,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday AS time FROM classes WHERE gymid = ' + req.params.gid, function(err, result, fields) {
+  var i = 0;
+  var search = "";
+  if(req.query.search !== undefined) {
+    var terms = req.query.search.split(',');
+    len = terms.length;
+    for (i = 0; i < len; i++){
+      search = search + '"' + terms[i] + '",';
+    }
+  }
+  search = search + "service";
+
+  rmysql.query('select id,gymid,service,duration from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ') ASC', function(err, result, fields) {
    if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "no matching gym"}');
+      res.end('{"status": "failed", "message": "no results"}');
     } else {
       res.send(result);
     }
