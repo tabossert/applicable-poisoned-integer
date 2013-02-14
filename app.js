@@ -857,7 +857,7 @@ app.get('/api/getClasses/:gid/', function(req, res){
   }
   search = search + "service";
 
-  rmysql.query('select id,gymid,service,duration from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ') ASC', function(err, result, fields) {
+  rmysql.query('select id,gymid,service,duration,image from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ') ASC', function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no results"}');
     } else {
