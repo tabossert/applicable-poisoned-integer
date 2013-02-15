@@ -921,17 +921,29 @@ app.post('/api/addClass/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
+  var cid = 0;
   if(req.body.spots == null) {
-    var spots = 100;
+    var spots = 30;
   } else {
     var spots = req.body.spots
   }
-  console.log('INSERT INTO classes (gymid,service,duration,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday) SELECT gu.gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ',"' + req.body.monday + '","' + req.body.tuesday + '","' + req.body.wednesday + '","' + req.body.thursday + '","' + req.body.friday + '","' + req.body.saturday + '","' + req.body.sunday + '" FROM gyms g INNER JOIN gymUsers gu ON gu.gymid = g.id WHERE token = ' + wmysql.escape(req.header('token')));
-  wmysql.query('INSERT INTO classes (gymid,service,duration,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday) SELECT gu.gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ',"' + req.body.monday + '","' + req.body.tuesday + '","' + req.body.wednesday + '","' + req.body.thursday + '","' + req.body.friday + '","' + req.body.saturday + '","' + req.body.sunday + '" FROM gyms g INNER JOIN gymUsers gu ON gu.gymid = g.id WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  console.log('INSERT INTO classes (gymid,service,duration,price,spots) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')));
+  wmysql.query('INSERT INTO classes (gymid,service,duration,price,spots) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to add class"}');
     } else {
-      var cid = result.insertId;
+      cid = result.insertId;
+      var keys = Object.keys( req.body.days );
+      keys.forEach(function(key) {
+      req.body.days[key].forEach(function(time) {
+          console.log('INSERT INTO classTimes (classid,gymid,weekday,time) SELECT ' + cid + ',gymid,' + wmysql.escape(key) + ',' + wmysql.escape(time) + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')));
+          wmysql.query('INSERT INTO classTimes (classid,gymid,weekday,time) SELECT ' + cid + ',gymid,' + wmysql.escape(key) + ',' + wmysql.escape(time) + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+            if(err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to add class"}');
+            }     
+          });
+        });
+      });
       res.end('{"status": "success", "message": "' + cid + '"}');
     }
   });
@@ -945,9 +957,26 @@ app.get('/api/getClass/:cid', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log(req.params.cid);
-  rmysql.query('SELECT id,gymid,service,duration,price,spots,monday,tuesday,wednesday,thursday,friday,saturday,sunday FROM classes WHERE id = ' + req.params.cid, function(err, result, fields) {
+  console.log('SELECT id,gymid,service,duration,price,spots FROM classes WHERE id = ' + req.params.cid);
+  rmysql.query('SELECT id,gymid,service,duration,price,spots FROM classes WHERE id = ' + req.params.cid, function(err, result, fields) {
    if(err || result.length < 1) {
+      res.end('{"status": "failed", "message": "no matching class"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+
+app.get('/api/getClassTimes/:cid', function(req, res){
+  try {
+    check(req.params.cid).isNumeric() 
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT weekday,GROUP_CONCAT(time) AS time FROM classTimes WHERE classid = ' + req.params.cid + ' GROUP BY weekday ORDER BY weekday', function(err, result, fields) {
+    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
       res.send(result);
@@ -959,23 +988,34 @@ app.get('/api/getClass/:cid', function(req, res){
 app.post('/api/updateClass/', function(req, res){
   try {
     check(req.header('token')).notNull();
-    check(req.body.price).len(1,5).isInt()
-    check(req.body.classid).isNumeric()
+    check(req.body.price).len(1,5).isInt();
+    check(req.body.classid).isNumeric();
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
   if(req.body.spots == null) {
-    var spots = 100;
+    var spots = 30;
   } else {
     var spots = req.body.spots
   }
-  console.log('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',duration = "' + req.body.duration + '",price = "' + req.body.price + '",spots = ' + spots + ', monday = "' + req.body.monday + '", tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '", thursday = "' + req.body.thursday + '", friday = "' + req.body.friday + '", saturday = "' + req.body.saturday + '", sunday = "' + req.body.sunday + '" WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')));
-  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',duration = "' + req.body.duration + '",price = "' + req.body.price + '",spots = ' + spots + ', monday = "' + req.body.monday + '", tuesday = "' + req.body.tuesday + '", wednesday = "' + req.body.wednesday + '", thursday = "' + req.body.thursday + '", friday = "' + req.body.friday + '", saturday = "' + req.body.saturday + '", sunday = "' + req.body.sunday + '" WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  console.log('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',duration = "' + req.body.duration + '",price = "' + req.body.price + '",spots = ' + spots + ' WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')));
+  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',duration = "' + req.body.duration + '",price = "' + req.body.price + '",spots = ' + spots + ' WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to update class"}');
     } else {
-      res.end('{"status": "success"}');
+      var keys = Object.keys( req.body.days );
+      keys.forEach(function(key) {
+      req.body.days[key].forEach(function(time) {
+          wmysql.query('DELETE FROM classTimes WHERE classid = ' + req.body.classid);
+          wmysql.query('INSERT INTO classTimes (classid,gymid,weekday,time) SELECT ' + req.body.classid + ',gymid,' + wmysql.escape(key) + ',' + wmysql.escape(time) + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+            if(err || result.length < 1) {
+              res.end('{"status": "failed", "message": "unable to add class"}');
+            }     
+          });
+        });
+      });
+      res.end('{"status": "success", "message": "' + req.body.classid + '"}');
     }
   });
 });
