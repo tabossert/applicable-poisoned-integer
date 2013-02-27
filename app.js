@@ -305,7 +305,7 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
         var term = S(terms[i]).trim();
         where = where + ' WHERE (c.service = "' + term + '"';
       } else {
-	var term = S(terms[i]).trim();
+	      var term = S(terms[i]).trim();
         where = where + ' OR c.service = "' + term + '"';
       }
     }
