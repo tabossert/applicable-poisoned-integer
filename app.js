@@ -10,6 +10,7 @@ var express = require('express')
   , fs = require("fs")
   , path = require("path")
   , routes = require('./routes')
+  , S = require('string')
   , http = require('http')
   , https = require('https')
   , _mysql = require('mysql')
@@ -293,6 +294,7 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
   , where = '';
 
   query = query + ' INNER JOIN classes c ON g.id = c.gymid';
+  var match = "";
   if(req.body.workouts !== undefined) {
     var terms = req.body.workouts.split(',')
     len = terms.length;
@@ -300,12 +302,17 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
     for (i = 0; i < len; i++){
       if(i == 0)
       {
-        where = where + ' WHERE (c.service = "' + terms[i] + '"';
+        var term = S(terms[i]).trim();
+        where = where + ' WHERE (c.service = "' + term + '"';
       } else {
-        where = where + ' OR c.service = "' + terms[i] + '"';
+	var term = S(terms[i]).trim();
+        where = where + ' OR c.service = "' + term + '"';
       }
     }
     where = where + ')';
+    match = 'GROUP_CONCAT(DISTINCT service) AS matched,';
+  } else {
+    match = '"" AS matched,';
   }
   try {
     if(req.body.name !== undefined) {
@@ -320,8 +327,8 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
 
 
   function runQuery(query,where,callback){
-    rmysql.query('SELECT g.id,count(c.id) AS level,GROUP_CONCAT(service) AS matched,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where, function(err, result, fields) {
-    console.log('SELECT g.id,count(c.id) AS level,GROUP_CONCAT(service) AS matched,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url FROM gyms g ' + query + where);
+    rmysql.query('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where, function(err, result, fields) {
+    console.log('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where);
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "No Results"}');
     } else {
@@ -783,9 +790,10 @@ app.post('/api/addEvent/', function(req, res){
                 }
               });
             } else {
+              console.log('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")'   );
               wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
                 if(err || result.length < 1) {
-                  res.end('{"status": "failed", "message": "unable to add event"}');
+                  res.end('{"status": "failed", "message": "unable to add event6"}');
                 } else {
                   res.end('{' + result[0][0].transMess + '}');
                 }
@@ -857,7 +865,7 @@ app.get('/api/getClasses/:gid/', function(req, res){
   }
   search = search + "service";
 
-  rmysql.query('select id,gymid,service,duration,image from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ') ASC', function(err, result, fields) {
+  rmysql.query('select id,gymid,service,duration,image from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ',service) ASC', function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no results"}');
     } else {
@@ -957,8 +965,8 @@ app.get('/api/getClass/:cid', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log('SELECT id,gymid,service,duration,price,spots FROM classes WHERE id = ' + req.params.cid);
-  rmysql.query('SELECT id,gymid,service,duration,price,spots FROM classes WHERE id = ' + req.params.cid, function(err, result, fields) {
+  console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,gh.monday,gh.tuesday,gh.wednesday,gh.thursday,gh.friday,gh.saturday,gh.sunday FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours gh ON g.id = gh.gymid WHERE c.id = ' + req.params.cid);
+  rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone,gh.monday,gh.tuesday,gh.wednesday,gh.thursday,gh.friday,gh.saturday,gh.sunday FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours gh ON g.id = gh.gymid WHERE c.id = ' + req.params.cid, function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
