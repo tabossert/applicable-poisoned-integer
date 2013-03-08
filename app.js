@@ -28,19 +28,19 @@ var express = require('express')
 /**
 * MySQL DB connection info and setup
 */
-var WHOST = 'localhost';
+var WHOST = '127.0.0.1';
 var WPORT = 3306;
 var WMYSQL_USER = 'zunefitAPI';
 var WMYSQL_PASS = 'F1tn3ss is WHERE! its @';
 var WDATABASE = 'zunefit';
 
-var RHOST = 'localhost';
+var RHOST = '127.0.0.1';
 var RPORT = 3306;
 var RMYSQL_USER = 'zunefitAPI';
 var RMYSQL_PASS = 'F1tn3ss is WHERE! its @';
 var RDATABASE = 'zunefit';
 
-var AHOST = 'localhost';
+var AHOST = '127.0.0.1';
 var APORT = 3306;
 var AMYSQL_USER = 'barbell';
 var AMYSQL_PASS = '10Reps f0r perf3Ction!';
@@ -267,7 +267,7 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
     console.log(lat);
     console.log(lng);
     console.log(fAddress);
-    cordinatesModel.db.db.executeDbCommand({geoNear: "cordinates", near: [lng, lat], maxDistance: 100/3959 ,distanceMultiplier: 3959, spherical: true }, function(err,res) {
+    cordinatesModel.db.db.executeDbCommand({geoNear: "cordinates", near: [lng, lat], maxDistance: distance/3959 ,distanceMultiplier: 3959, spherical: true }, function(err,res) {
       if(err) {
         res.end('{"status": "failed", "message":"No Gym matched location"}');
       } else {
