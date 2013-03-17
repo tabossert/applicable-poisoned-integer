@@ -542,14 +542,14 @@ app.post('/api/userSchedule/', function(req, res){
   try {
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
-    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
-    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    //check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    //check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT s.id,g.name,s.classid,c.service,c.duration,DATE_FORMAT(s.datetime, "%m/%d/%Y ") as date, DATE_FORMAT(s.datetime,"%l:%i %p") as time FROM schedule s INNER JOIN classes c ON (s.classid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
-    if (err || result.length < 1) {
+  rmysql.query('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.classid,c.service,c.duration,c.image,s.datetime FROM schedule s INNER JOIN classes c ON (s.classid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
+    if (err) {
       res.end('{"status": "failed", "message": "unable to update"}');
     } else {
       res.send(result);
@@ -740,62 +740,68 @@ app.post('/api/addEvent/', function(req, res){
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
     check(req.body.classid).isNumeric()
-    check(req.body.gymid).isNumeric()
     check(req.body.datetime).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i) 
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT price FROM classes WHERE id = ' + req.body.classid, function(err, result, fields) {
-    if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "no class found"}');
-    } else {
-      var price = result[0].price;
-      rmysql.query('SELECT c.spots - COUNT(s.classid) AS openSpots FROM schedule s INNER JOIN classes c ON s.classid = c.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
-        console.log(result.length)
+  rmysql.query('SELECT s.id FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime +  '" AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      res.end('{"status": "failed", "message": "already scheduled"}');
+    } else { 
+      rmysql.query('SELECT gymid,price FROM classes WHERE id = ' + req.body.classid, function(err, result, fields) {
         if(err || result.length < 1) {
           res.end('{"status": "failed", "message": "no class found"}');
-        } else if (result[0].openSpots < 1) {
-          res.end('{"status": "failed", "message": "class full"}');
         } else {
-          rmysql.query('SELECT u.id AS uid,b.refillamount,b.cToken FROM users u INNER JOIN balance b ON u.id = b.userid WHERE b.minamount > u.balance - ' + price + ' AND b.automatic = true AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-            if(result.length > 0) {
-              var uid = result[0].uid;
-              var amount = result[0].refillamount * 100;
-              stripe.charges.create({ amount: amount, currency: 'usd', customer: result[0].cToken }, function(err,charge) {
-                if(err) {
-                  res.end("refill not setup");
-                } else {
-                  wmysql.query('CALL refillBalance(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ')', function(err, bresult, fields) {
-		                if(err || bresult.length < 1 || bresult.length == 'undefined') {
-                      var ts = Math.round((new Date()).getTime() / 1000);
-                      fs.writeFile("logs/failedBalanceUpdate.log", uid + ',' + amount + ',' + ts, function(err) {
-                        if(err) {
-                          console.log('Unable to save to log');
-                        } else {
-                          console.log('Failure saved to log');
-                        }
-                      });
-                      res.end('{"status": "failed", "message": "unable to refill balance"}');
+          var price = result[0].price;
+          var gymid = result[0].gymid;
+          rmysql.query('SELECT c.spots - COUNT(s.classid) AS openSpots FROM schedule s INNER JOIN classes c ON s.classid = c.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
+            console.log(result.length)
+            if(err || result.length < 1) {
+              res.end('{"status": "failed", "message": "no class found"}');
+            } else if (result[0].openSpots < 1) {
+              res.end('{"status": "failed", "message": "class full"}');
+            } else {
+              rmysql.query('SELECT u.id AS uid,b.refillamount,b.cToken FROM users u INNER JOIN balance b ON u.id = b.userid WHERE b.minamount > u.balance - ' + price + ' AND b.automatic = true AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+                if(result.length > 0) {
+                  var uid = result[0].uid;
+                  var amount = result[0].refillamount * 100;
+                  stripe.charges.create({ amount: amount, currency: 'usd', customer: result[0].cToken }, function(err,charge) {
+                    if(err) {
+                      res.end("refill not setup");
                     } else {
-                      wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
-                        if(err || result.length < 1) {
-                          res.end('{"status": "failed", "message": "unable to add event"}');
+                      wmysql.query('CALL refillBalance(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ')', function(err, bresult, fields) {
+    		                if(err || bresult.length < 1 || bresult.length == 'undefined') {
+                          var ts = Math.round((new Date()).getTime() / 1000);
+                          fs.writeFile("logs/failedBalanceUpdate.log", uid + ',' + amount + ',' + ts, function(err) {
+                            if(err) {
+                              console.log('Unable to save to log');
+                            } else {
+                              console.log('Failure saved to log');
+                            }
+                          });
+                          res.end('{"status": "failed", "message": "unable to refill balance"}');
                         } else {
-                          res.end('{' + result[0][0].transMess + '}');
+                          wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
+                            if(err || result.length < 1) {
+                              res.end('{"status": "failed", "message": "unable to add event"}');
+                            } else {
+                              res.end('{' + result[0][0].transMess + '}');
+                            }
+                          });
                         }
                       });
                     }
                   });
-                }
-              });
-            } else {
-              console.log('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")'   );
-              wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + req.body.gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
-                if(err || result.length < 1) {
-                  res.end('{"status": "failed", "message": "unable to add event6"}');
                 } else {
-                  res.end('{' + result[0][0].transMess + '}');
+                  console.log('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + gymid +',"' + req.body.datetime + '")'   );
+                  wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
+                    if(err || result.length < 1) {
+                      res.end('{"status": "failed", "message": "unable to add event6"}');
+                    } else {
+                      res.end('{' + result[0][0].transMess + '}');
+                    }
+                  });
                 }
               });
             }
@@ -807,7 +813,7 @@ app.post('/api/addEvent/', function(req, res){
 });
 
 
-app.del('/api/deleteEvent/', function(req, res){  
+app.post('/api/deleteEvent/', function(req, res){  
   try {
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
@@ -983,7 +989,7 @@ app.get('/api/getClassTimes/:cid', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT weekday,GROUP_CONCAT(time) AS time FROM classTimes WHERE classid = ' + req.params.cid + ' GROUP BY weekday ORDER BY weekday', function(err, result, fields) {
+  rmysql.query('SELECT weekday,GROUP_CONCAT(time) AS time FROM classTimes WHERE classid = ' + req.params.cid + ' GROUP BY weekday ORDER BY FIELD(weekday,"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");', function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
@@ -1380,8 +1386,7 @@ app.get('/api/gymStats/', function(req, res){
   });
 });
 
-
-app.post('/api/paymentTransaction/', function(req, res) {
+app.post('/api/createCustomerToken/', function(req, res) {
   try {
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
@@ -1389,25 +1394,150 @@ app.post('/api/paymentTransaction/', function(req, res) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT id AS uid FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  stripe.customers.create({email: req.body.email, description: "Customer object for" + req.body.email, card: req.body.cToken}, function(err, customer) {
+   if(err) {
+    console.log(err.message);
+    res.end('{"status": "failed", "message": "error occured"}');
+    return;
+   } else {
+    wmysql.query('UPDATE balance b INNER JOIN users u ON b.userid = u.id SET b.cToken = "' + customer.id + '" WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+      if(err) {
+        res.end('{"status": "failed"}');
+      } else {
+        res.end('{"status": "success", "cToken": "' + customer.id + '"}');
+      }
+    });
+   }
+  });
+});
+
+
+/*app.post('/api/updateCustomerToken/', function(req, res) {
+  try {
+    check(req.header('ltype')).isAlphanumeric();
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  stripe.customers.del(req.body.cuToken, function(err, customer) {
+    if(err) {
+      console.log(err.message);
+      res.end('{"status": "failed", "message": "error occured"}');     
+    } 
+  });
+  stripe.customers.create({email: req.body.email, description: "Customer object for" + req.body.email, card: req.body.cToken}, function(err, customer) {
+   if(err) {
+    console.log(err.message);
+    res.end('{"status": "failed", "message": "error occured"}');
+    return;
+   } else {
+    console.log(customer.id);
+    console.log('UPDATE balance b INNER JOIN users u ON b.userid = u.id SET b.cToken = "' + customer.id + '" WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')));
+    wmysql.query('UPDATE balance b INNER JOIN users u ON b.userid = u.id SET b.cToken = "' + customer.id + '" WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+      if(err) {
+        res.end('{"status": "failed"}');
+      } else {
+        res.end('{"status": "success", "cToken": "' + customer.id + '"}');
+      }
+    });
+   }
+  });
+});*/
+
+app.post('/api/updateCustomerToken/', function(req, res) {
+  try {
+    check(req.header('ltype')).isAlphanumeric();
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  stripe.customers.update(req.body.cuToken,{email: req.body.email, description: "Customer object for" + req.body.email, card: req.body.cToken}, function(err, customer) {
+    if(err) {
+      console.log(err);
+      res.end('{"status": "failed", "message": "error occured"}');
+      return;
+    } else {
+      res.end('{"status": "success", "cToken": "' + customer.id + '"}');
+    }
+  });
+});
+
+
+
+app.post('/api/processPayment/',function(req, res) {
+  try {
+    check(req.header('ltype')).isAlphanumeric();
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  var amount = req.body.amount*100;
+  console.log(amount);
+  stripe.charges.create({amount: amount, currency: 'usd',customer: req.body.cToken},function(err, charge) {
+    if(err) {
+      console.log(err)
+      res.end('{"status": "failed", "message": "error occured"}');
+      return;
+    } else {
+      try {
+        paymentTransaction(req.header('ltype'),req.header('token'),charge.id, function(mes) {
+          res.end('{"status": "success"}');
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  });
+})
+
+
+app.post('/api/retrieveCustomer/',function(req, res) {
+  try {
+    check(req.header('ltype')).isAlphanumeric();
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }  
+  console.log(req.body);
+  //Use stripe here to get customer billing info and return it.
+  stripe.customers.retrieve(req.body.cToken, function(err, customer) {
+    if(err) {
+      console.log(err);
+      res.end('{"status": "failed", "unable to retrieve"}');
+      return;
+    } else {
+      res.end('[{"cuToken": "' + customer.id + '","name": "' + customer.active_card.name + '", "address_line1": "' + customer.active_card.address_line1 + '", "address_line2": "' + customer.active_card.address_line2 + '", "address_city": "' + customer.active_card.address_city + '", "address_state": "' + customer.active_card.address_state + '", "address_zip": "' + customer.active_card.address_zip + '", "ccard": "' + customer.active_card.last4 + '", "exp_month": "' + customer.active_card.exp_month + '", "exp_year": "' + customer.active_card.exp_year + '", "cvc": "' + customer.active_card.cvc_check + '" }]');
+    }
+  });
+})
+
+//app.post('/api/paymentTransaction/', function(req, res) {
+function paymentTransaction(ltype,token,refid,callback) {
+  rmysql.query('SELECT id AS uid FROM users WHERE `' + ltype + '_token` = ' + rmysql.escape(token), function(err, result, fields) {
     if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "no user matched"}');
+      callback("no user matched");
     } else {
       var uid = result[0].uid;
-      stripe.charges.retrieve(req.body.refid, function(err,charge) {
+      stripe.charges.retrieve(refid, function(err,charge) {
         console.log(charge);
         if(err) {
           console.log("Couldn't retrieve charge");
         } else {
-          wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + uid + ',' + wmysql.escape(req.body.refid) + ',NOW())', function(err, result, fields) {
+          wmysql.query('INSERT INTO transactions (userid,refid,timestamp) VALUES (' + uid + ',' + wmysql.escape(refid) + ',NOW())', function(err, result, fields) {
             if(err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to add transaction"}');
+              callback("unable to record transaction");
+              //res.end('{"status": "failed", "message": "unable to add transaction"}');
             } else {
               wmysql.query('UPDATE users SET balance = balance + ' + charge.amount/100 + ' WHERE id = ' + uid, function(err, result, fields) {
                 if(err || result.length < 1) {
-                  res.end('{"status": "failed", "message": "unable to update balance"}');
+                  callback("unable to update balance");
+                  //res.end('{"status": "failed", "message": "unable to update balance"}');
                 } else {
-                  res.end('{"status": "success"}');
+                  callback("success");
                 }
               });  
             }
@@ -1416,7 +1546,7 @@ app.post('/api/paymentTransaction/', function(req, res) {
       });
     }
   });
-});
+};
 
 
 app.post('/api/getTransactions/', function(req, res) {
