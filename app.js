@@ -645,7 +645,7 @@ app.post('/api/userSignup/', function(req, res){
 });
 
 
-app.post('/api/userSignout/', function(req, res){
+app.get('/api/userSignout/', function(req, res){
   try {
     check(req.header('ltype')).isAlphanumeric();
     check(req.header('token')).notNull();
@@ -653,7 +653,7 @@ app.post('/api/userSignout/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  wmysql.query('UPDATE users SET token = null WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE users SET `' + req.header('ltype') + '_token` = null WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to signout user"}');	
     } else {
@@ -1861,7 +1861,7 @@ app.post('/api/aLogin/', function(req, res) {
 });
 
 
-app.post('/api/aLogout/', function(req, res){
+app.get('/api/aLogout/', function(req, res){
   try {
     check(req.header('token')).notNull();
   } catch (e) {
