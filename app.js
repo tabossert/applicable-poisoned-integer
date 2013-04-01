@@ -229,7 +229,7 @@ app.get('/', function(req, res){
 app.get('/api/healthMe/', function(req, res){
   wmysql.query('SELECT id FROM transactions LIMIT 1', function(err, result, fields) {
     if(err || result.length < 1) {
-      res.end('"status": "failed"');
+      res.send('"status": "failed"');
     } else {
       res.end('"status": "success');
     }
@@ -248,7 +248,7 @@ app.get('/api/gymSearch/:type/:value/:state', function(req, res){
   }
   rmysql.query('SELECT id,name,address,city,state,zipcode,email,phone FROM gyms ' + where, function(err, result, fields) {
     if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "no gyms found"}');
+      res.send('{"status": "failed", "message": "no gyms found"}');
     } else {
       res.send(result);
     }
@@ -330,7 +330,7 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
     rmysql.query('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where, function(err, result, fields) {
     console.log('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where);
     if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "No Results"}');
+      res.send('{"status": "failed", "message": "No Results"}');
     } else {
 	console.log(disObj);
 	   result.forEach(function(res) {
@@ -360,7 +360,7 @@ app.post('/api/gymId/', function(req, res) {
 
   cordinatesModel.find({loc : { $near: [lat, lng], $maxDistance: 0.00027448396957 }} , function(err, result) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message":"No Gym matched ID"}');
+      res.send('{"status": "failed", "message":"No Gym matched ID"}');
     } else {
       console.log(result);
       res.send(result);
@@ -378,7 +378,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
   }
   rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate,image,facebook,twitter,googleplus,url FROM gyms WHERE id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "no gym matches"}');
+      res.send('{"status": "failed", "message": "no gym matches"}');
     } else {
       res.send(result);
     }
@@ -391,7 +391,7 @@ app.get('/api/featuredGyms/', function(req, res){
   //AND city = "' + loc.city + '" AND state = "' + loc.region + '"'
   rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email FROM gyms WHERE featured = true', function(err, result, fields) {
     if (err || result.length < 1) {
-     res.end('{"status": "failed", "message": "unable to retreive"}');
+     res.send('{"status": "failed", "message": "unable to retreive"}');
     } else {
       res.send(result);
     }
@@ -420,7 +420,7 @@ app.get('/api/balance/', function(req, res){
   }
   rmysql.query('SELECT balance FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
   if (err || result.length < 1) {
-     res.end('{"status": "failed", "message": "no user found"}');
+     res.send('{"status": "failed", "message": "invalid token"}',401);
     } else {
       console.log(result);
       res.send(result);
@@ -1602,7 +1602,7 @@ app.post('/api/barbell/pcbh/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.end('{"status": "failed", "message":"invalid token"}',401);
     } else {
       rmysql.query('SELECT t1.classid,t1.reservations,t1.datetime FROM barbell.classhourly t1 INNER JOIN (SELECT classid,MAX(reservations) AS res,datetime AS max_date FROM barbell.classhourly WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY classid) t2 ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid', function(err, result, fields) {
         if (err || result.length < 1) {
@@ -1627,7 +1627,7 @@ app.post('/api/barbell/pcbd/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.end('{"status": "failed", "message":"invalid token"}',401);
     } else {
       rmysql.query('SELECT t1.classid,t1.reservations,DAYNAME(t1.datetime) FROM barbell.classdaily t1 INNER JOIN (SELECT classid,MAX(reservations) AS res FROM barbell.classdaily WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY classid) t2 ON t1.reservations = t2.res AND t1.classid = t2.classid GROUP BY classid', function(err, result, fields) {
         if (err || result.length < 1) {
@@ -1652,7 +1652,7 @@ app.post('/api/barbell/appc/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.end('{"status": "failed", "message":"invalid token"}',401);
     } else {
       rmysql.query('SELECT service,duration,ROUND(AVG(price),2) AS price,datetime FROM barbel.classhourly WHERE datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY service,duration', function(err, result, fields) {
         if (err || result.length < 1) {
@@ -1677,11 +1677,11 @@ app.post('/api/barbell/arph/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
       rmysql.query('SELECT ROUND(AVG(reservations),0) AS avgres,datetime FROM barbell.classhourly WHERE datetime >= "' + req.body.start + '" AND datetime < "' + req.body.end + '" GROUP BY datetime', function(err, result, fields) {
         if (err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to retrieve"}');
+          res.send('{"status": "failed", "message": "unable to retrieve"}');
         } else {
           res.send(result);
         }      
@@ -1702,11 +1702,11 @@ app.post('/api/barbell/rcbc/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
       rmysql.query('SELECT userid,gymid,classid,visits FROM barbell.repeats WHERE gymid = ' + result[0].gymid + ' GROUP BY userid,classid', function(err, result, fields) {
         if (err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to retrieve"}');
+          res.send('{"status": "failed", "message": "unable to retrieve"}');
         } else {
           res.send(result);
         }      
@@ -1726,12 +1726,12 @@ app.post('/api/barbell/cdbp/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
       try {
         rmysql.query('SELECT male,female,city,state,zipcode,total,datetime FROM barbell.demographic WHERE `' + req.body.param + '` = ' + rmysql.escape(req.body.value), function(err, result, fields) {
           if (err || result.length < 1) {
-            res.end('{"status": "failed", "message": "unable to retrieve"}');
+            res.send('{"status": "failed", "message": "unable to retrieve"}');
           } else {
             res.send(result);
           }      
@@ -1755,13 +1755,13 @@ app.post('/api/barbell/cdbt/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
       try {
         if(req.body.duration == 'month') {
           rmysql.query('SELECT gymid,classid,service,visits,reservations,amount,datetime FROM barbell.classmonthly WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 MONTH)', function(err, result, fields) {
             if (err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to retrieve"}');
+              res.send('{"status": "failed", "message": "unable to retrieve"}');
             } else {
               res.send(result);
             }      
@@ -1769,7 +1769,7 @@ app.post('/api/barbell/cdbt/', function(req, res){
         } else if(req.body.duration == "week") {
           rmysql.query('SELECT gymid,classid,service,visits,reservations,duration,amount,datetime FROM barbell.classdaily WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 WEEK)', function(err, result, fields) {
             if (err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to retrieve"}');
+              res.send('{"status": "failed", "message": "unable to retrieve"}');
             } else {
               res.send(result);
             }      
@@ -1777,7 +1777,7 @@ app.post('/api/barbell/cdbt/', function(req, res){
         } else {
           rmysql.query('SELECT gymid,classid,service,visits,reservations,duration,price,amount,datetime FROM barbell.classhourly WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < DATE_ADD("' + req.body.start + '",INTERVAL 1 DAY)', function(err, result, fields) {
             if (err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to retrieve"}');
+              res.send('{"status": "failed", "message": "unable to retrieve"}');
             } else {
               res.send(result);
             }      
@@ -1802,13 +1802,13 @@ app.post('/api/barbell/gdbt/', function(req, res){
   }
   rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
-      res.end('{"status": "failed", "message": "invalid token"}');
+      res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
       try {
         if(req.body.duration == 'month') {
           rmysql.query('SELECT gymid,SUM(amount) FROM barbell.classmonthly WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 MONTH)', function(err, result, fields) {
             if (err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to retrieve"}');
+              res.send('{"status": "failed", "message": "unable to retrieve"}');
             } else {
               res.send(result);
             }      
@@ -1816,7 +1816,7 @@ app.post('/api/barbell/gdbt/', function(req, res){
         } else if(req.body.duration == "week") {
           rmysql.query('SELECT gymid,SUM(amount) FROM barbell.classdaily WHERE gymid = ' + result[0].gymid + ' AND datetime >= DATE("' + req.body.start + '") AND datetime < DATE_ADD(DATE("' + req.body.start + '"),INTERVAL 1 WEEK)', function(err, result, fields) {
             if (err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to retrieve"}');
+              res.send('{"status": "failed", "message": "unable to retrieve"}');
             } else {
               res.send(result);
             }      
@@ -1824,7 +1824,7 @@ app.post('/api/barbell/gdbt/', function(req, res){
         } else {
           rmysql.query('SELECT gymid,SUM(amount) FROM barbell.classhourly WHERE gymid = ' + result[0].gymid + ' AND datetime >= "' + req.body.start + '" AND datetime < DATE_ADD("' + req.body.start + '",INTERVAL 1 DAY)', function(err, result, fields) {
             if (err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to retrieve"}');
+              res.send('{"status": "failed", "message": "unable to retrieve"}');
             } else {
               res.send(result);
             }      
@@ -1850,7 +1850,7 @@ app.post('/api/aLogin/', function(req, res) {
         var userid = result[0].userid;
         wmysql.query('UPDATE adminUsers set token = "' + token + '" WHERE userid = ' + userid, function(err, result, fields) {
           if(err || result.length < 1) {
-            res.end('{"status": "failed", "message": "unable to update"}');
+            res.send('{"status": "failed", "message": "unable to update"}');
           } else {
             res.end('{"status": "success", "token": "' + token + '"}');
           }
@@ -1870,7 +1870,7 @@ app.get('/api/aLogout/', function(req, res){
   }
   wmysql.query('UPDATE adminUsers SET token = null WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "unable to logout"}');  
+      res.send('{"status": "failed", "message": "unable to logout"}');  
     }
     else {
       res.end('{"status": "success"}');
@@ -1893,7 +1893,7 @@ app.post('/api/getFC/', function(req, res){
     if(result.length > 0) {
       rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.email,g.phone,g.contact,gb.balance,d.paymenttype,d.paylimit,d.type FROM gyms g INNER JOIN gymBilling gb ON g.id = gb.gid INNER JOIN disbursement d ON g.id = d.gymid INNER JOIN paymentmethod p ON p.id = d.type ORDER BY g.id DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
         if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to retreive"}');  
+          res.send('{"status": "failed", "message": "unable to retreive"}');  
         } else {
           res.send(result);
         }
@@ -1917,7 +1917,7 @@ app.get('/api/getEmployees/:gid', function(req, res){
     if(result.length > 0) {
       rmysql.query('SELECT gymid,username,first_name,last_name,groupid,lastlogin FROM gymUsers WHERE gymid = ' + req.params.gid, function(err, result, fields) {
         if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to retreive"}');  
+          res.send('{"status": "failed", "message": "unable to retreive"}');  
         } else {
           res.send(result);
         }
@@ -1941,7 +1941,7 @@ app.post('/api/updateEmployee/:guid', function(req, res){
     if(result.length > 0) {
       rmysql.query('UPDATE gymUsers set first_name = ' + req.body.first_name + ',last_name = ' + req.body.last_name + ',groupid = ' + req.body.groupid + ',password = ' + req.body.password + ' WHERE id = ' + req.params.guid, function(err, result, fields) {
         if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to update"}');  
+          res.send('{"status": "failed", "message": "unable to update"}');  
         } else {
           res.send(result);
         }
@@ -1967,7 +1967,7 @@ app.post('/api/getUsers/', function(req, res){
     if(result.length > 0) {
       rmysql.query('SELECT id,CONVERT(AES_DECRYPT(email,"' + salt + '") USING utf8) AS email,first_name,last_name FROM users ORDER BY email DESC LIMIT 20 OFFSET ' + req.body.offset, function(err, result, fields) {
         if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to retreive"}');  
+          res.send('{"status": "failed", "message": "unable to retreive"}');  
         } else {
           res.send(result);
         }
@@ -1990,7 +1990,7 @@ app.get('/api/getUser/:uid', function(req, res){
     if(result.length > 0) {
       rmysql.query('SELECT id,CONVERT(AES_DECRYPT(u.email,"' + salt + '") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"' + salt + '") USING utf8) AS address,u.city,u.state,u.zipcode,b.amount,b.automatic,b.refillamount,b.minamount,b.cToken FROM users u INNER JOIN balance b ON u.id = b.userid WHERE u.id = ' + rmysql.escape(req.params.uid) , function(err, result, fields){
         if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to retreive"}');
+          res.send('{"status": "failed", "message": "unable to retreive"}');
         } else {
           res.send(result);
         }       
@@ -2013,7 +2013,7 @@ app.get('/api/getAdmins/', function(req, res){
     if(result.length > 0) {
       rmysql.query('SELECT au.id,CONVERT(AES_DECRYPT(u.email,"oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") USING utf8) AS email,u.first_name,u.last_name,CONVERT(AES_DECRYPT(u.address,"oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$") USING utf8) AS address,u.city,u.state,u.zipcode FROM adminUsers au INNER JOIN users u ON au.userid = u.id', function(err, result, fields){
         if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "unable to retreive"}');
+          res.send('{"status": "failed", "message": "unable to retreive"}');
         } else {
           res.send(result);
         }    
@@ -2039,7 +2039,7 @@ app.post('/api/makeAdmin/', function(req, res){
         if(result.length > 0) {
           wmysql.query('INSERT INTO adminUsers (userid,password) VALUES(' + wmysql.escape(req.body.userid) + ',"' + req.body.password + '")', function(err, result, fields) {
             if(err || result.length < 1) {
-              res.end('{"status": "failed", "message": "unable to insert"}');  
+              res.send('{"status": "failed", "message": "unable to insert"}');  
             } else {
               res.send(result);
             }
