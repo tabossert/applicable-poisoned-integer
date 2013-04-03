@@ -376,7 +376,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT id,name,address,city,state,zipcode,phone,email,contact,rate,image,facebook,twitter,googleplus,url FROM gyms WHERE id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
+  rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.contact,g.rate,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid WHERE g.id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message": "no gym matches"}');
     } else {
