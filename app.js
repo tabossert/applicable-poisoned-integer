@@ -327,8 +327,8 @@ app.post('/api/gymSearchAdvanced/', function(req, res){
 
 
   function runQuery(query,where,callback){
-    rmysql.query('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where, function(err, result, fields) {
-    console.log('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where);
+    rmysql.query('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where, function(err, result, fields) {
+    console.log('SELECT g.id,count(c.id) AS level,' + match + 'g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM gyms g INNER JOIN hours h ON g.id = h.gymid ' + query + where);
     if(err || result.length < 1) {
       res.send('{"status": "failed", "message": "No Results"}');
     } else {
@@ -376,7 +376,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.contact,g.rate,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.monday,h.tuesday,h.wednesday,h.thursday,h.friday,h.saturday,h.sunday FROM gyms g INNER JOIN hours h ON g.id = h.gymid WHERE g.id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
+  rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.contact,g.rate,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM gyms g INNER JOIN hours h ON g.id = h.gymid WHERE g.id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message": "no gym matches"}');
     } else {
@@ -971,8 +971,8 @@ app.get('/api/getClass/:cid', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,gh.monday,gh.tuesday,gh.wednesday,gh.thursday,gh.friday,gh.saturday,gh.sunday FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours gh ON g.id = gh.gymid WHERE c.id = ' + req.params.cid);
-  rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone,gh.monday,gh.tuesday,gh.wednesday,gh.thursday,gh.friday,gh.saturday,gh.sunday FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours gh ON g.id = gh.gymid WHERE c.id = ' + req.params.cid, function(err, result, fields) {
+  console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid);
+  rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid, function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
@@ -1128,9 +1128,7 @@ app.post('/api/updateGymProfile/', function(req, res){
     check(req.header('token')).notNull();
     check(req.body.phone).len(10,10).isNumeric()
     check(req.body.email).isEmail()
-    check(req.body.zipcode).len(5,5).isNumeric()
-    check(req.body.type).isNumeric()
-    check(req.body.paymenttype).isNumeric()  
+    check(req.body.zipcode).len(5,5).isNumeric()  
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
@@ -1139,39 +1137,39 @@ app.post('/api/updateGymProfile/', function(req, res){
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to update gym"}');
     } else {
-      wmysql.query('UPDATE hours h INNER JOIN gymUsers gu ON h.gymid = gu.gymid set monday = "' + wmysql.escape(req.body.monday) + '",tuesday = "' + wmysql.escape(req.body.tuesday) + '", wednesday = "' + wmysql.escape(req.body.wednesday) + '",thursday = "' + wmysql.escape(req.body.thursday) + '",friday = "' + wmysql.escape(req.body.friday) + '",saturday = "' + wmysql.escape(req.body.saturday) + '",sunday = "' + wmysql.escape(req.body.sunday) + '" WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-      if(err || result.length < 1) {
-        res.end('{"status": "failed", "message": "unable to update hours"}');
-      } else {
-        wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu set d.paymenttype = ' + wmysql.escape(req.body.paymenttype) + ',d.paylimit = ' + wmysql.escape(req.body.limit) + ',d.type = ' + wmysql.escape(req.body.type) + ' WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+      wmysql.query('UPDATE hours h INNER JOIN gymUsers gu ON h.gymid = gu.gymid set mondayOpen = "' + wmysql.escape(req.body.mondayOpen) + '",mondayClose = "' + wmysql.escape(req.body.mondayClose) + '",tuesdayOpen = "' + wmysql.escape(req.body.tuesdayOpen) + '",tuesdayClose = "' + wmysql.escape(req.body.tuesdayClose) + '", wednesdayOpen = "' + wmysql.escape(req.body.wednesdayOpen) + '",wednesdayClose = "' + wmysql.escape(req.body.wednesdayClose) + '",thursdayOpen = "' + wmysql.escape(req.body.thursdayOpen) + '",thursdayClose = "' + wmysql.escape(req.body.thursdayClose) + '",fridayOpen = "' + wmysql.escape(req.body.fridayOpen) + '",fridayClose = "' + wmysql.escape(req.body.fridayClose) + '",saturdayOpen = "' + wmysql.escape(req.body.saturdayOpen) + '",saturdayClose = "' + wmysql.escape(req.body.saturdayClose) + '",sundayOpen = "' + wmysql.escape(req.body.sundayOpen) + '",sundayClose = "' + wmysql.escape(req.body.sundayClose) + '" WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+        if(err || result.length < 1) {
+          res.end('{"status": "failed", "message": "unable to update hours"}');
+        } else {
+        /*wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu set d.paymenttype = ' + wmysql.escape(req.body.paymenttype) + ',d.paylimit = ' + wmysql.escape(req.body.limit) + ',d.type = ' + wmysql.escape(req.body.type) + ' WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
             if(err || result.length < 1) {
               res.end('{"status": "failed", "message": "unable to update disbursement"}');
-            } else {
-              geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
-               cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
-                 if(!p) {
-                   var gymLoc = new cordinatesModel({ gymid: req.body.gid, loc: {lng: lng, lat: lat }});
-                     gymLoc.save(function (err) {
-                       if(err)
-                         res.end('{"status": "failed", "message": "Unable to add geo cordinates"}');
-                       else   
-                         res.end('{"status": "success"}');
-                    });
-                  } else { 
-                   p.loc.lat = lat;
-                   p.loc.lng = lng;  
-                   p.save(function(err) {
-                     if(err) 
-                       res.end('{"status": "failed", "message": "Unable to update geo cordinates"}');
-                     else
-                       res.end('{"status": "success"}');
-                    });
-                  }
-                });
+            } else {*/
+          geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
+            cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
+              if(!p) {
+                var gymLoc = new cordinatesModel({ gymid: req.body.gid, loc: {lng: lng, lat: lat }});
+                  gymLoc.save(function (err) {
+                    if(err)
+                      res.end('{"status": "failed", "message": "Unable to add geo cordinates"}');
+                    else   
+                      res.end('{"status": "success"}');
+                  });
+                } else { 
+                  p.loc.lat = lat;
+                  p.loc.lng = lng;  
+                  p.save(function(err) {
+                    if(err) 
+                      res.end('{"status": "failed", "message": "Unable to update geo cordinates"}');
+                    else
+                      res.end('{"status": "success"}');
+                  });
+                }
               });
-            } 
-          });
-        }
+            });
+          } 
+          /*});
+        }*/
       });
     } 
   });
