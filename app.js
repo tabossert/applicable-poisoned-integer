@@ -1126,6 +1126,7 @@ app.post('/api/addGymImage/', function(req, res){
 app.post('/api/updateGymProfile/', function(req, res){
   try {
     check(req.header('token')).notNull();
+    check(req.body.gid).isNumeric();
     check(req.body.phone).len(10,10).isNumeric()
     check(req.body.email).isEmail()
     check(req.body.zipcode).len(5,5).isNumeric()  
