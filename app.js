@@ -853,7 +853,7 @@ app.post('/api/deleteEvent/', function(req, res){
 });*/
 
 
-app.get('/api/getClasses/:gid/', function(req, res){
+app.get('/api/getClasses/:gid', function(req, res){
   try {
     check(req.params.gid).isNumeric();
   } catch (e) {
@@ -871,7 +871,7 @@ app.get('/api/getClasses/:gid/', function(req, res){
   }
   search = search + "service";
 
-  rmysql.query('select id,gymid,service,duration,image from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ',service) ASC', function(err, result, fields) {
+  rmysql.query('select id,gymid,service,duration,price,spots,image from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ',service) ASC', function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no results"}');
     } else {
@@ -1018,10 +1018,10 @@ app.post('/api/updateClass/', function(req, res){
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to update class"}');
     } else {
+      wmysql.query('DELETE FROM classTimes WHERE classid = ' + req.body.classid);
       var keys = Object.keys( req.body.days );
       keys.forEach(function(key) {
       req.body.days[key].forEach(function(time) {
-          wmysql.query('DELETE FROM classTimes WHERE classid = ' + req.body.classid);
           wmysql.query('INSERT INTO classTimes (classid,gymid,weekday,time) SELECT ' + req.body.classid + ',gymid,' + wmysql.escape(key) + ',' + wmysql.escape(time) + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
             if(err || result.length < 1) {
               res.end('{"status": "failed", "message": "unable to add class"}');
