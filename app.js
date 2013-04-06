@@ -942,7 +942,7 @@ app.post('/api/addClass/', function(req, res){
     var spots = req.body.spots
   }
   console.log('INSERT INTO classes (gymid,service,duration,price,spots) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')));
-  wmysql.query('INSERT INTO classes (gymid,service,duration,price,spots) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('INSERT INTO classes (gymid,service,duration,price,spots,desc) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ',' + wmysql.escape(req.body.description) + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to add class"}');
     } else {
@@ -1014,7 +1014,7 @@ app.post('/api/updateClass/', function(req, res){
     var spots = req.body.spots
   }
   console.log('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',duration = "' + req.body.duration + '",price = "' + req.body.price + '",spots = ' + spots + ' WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')));
-  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',duration = "' + req.body.duration + '",price = "' + req.body.price + '",spots = ' + spots + ' WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('UPDATE classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid SET service = ' + wmysql.escape(req.body.service) + ',duration = "' + req.body.duration + '",price = "' + req.body.price + '",spots = ' + spots + ',desc = ' + wmysql.escape(req.body.description) + ' WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to update class"}');
     } else {
