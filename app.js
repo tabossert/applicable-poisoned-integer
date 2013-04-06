@@ -1147,7 +1147,7 @@ app.post('/api/updateGymProfile/', function(req, res){
             if(err || result.length < 1) {
               res.end('{"status": "failed", "message": "unable to update disbursement"}');
             } else {*/
-          geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lat,lng) {
+          geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lng,lat) {
             cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
               if(!p) {
                 var gymLoc = new cordinatesModel({ gymid: req.body.gid, loc: {lng: lng, lat: lat }});
