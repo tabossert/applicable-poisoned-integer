@@ -910,6 +910,23 @@ app.post('/api/getDayClasses/', function(req, res){
 });
 
 
+app.post('/api/getNextClasses/', function(req, res) {
+  try {
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  console.log('SELECT c.id,c.service,ct.time FROM classes c INNER JOIN classTimes ct ON c.id = ct.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE ct.weekday = ' + rmysql.escape(req.body.weekday) + ' AND ct.time >= ' + rmysql.escape(req.body.start) + ' AND ct.time <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')))
+  rmysql.query('SELECT c.id,c.service,ct.time FROM classes c INNER JOIN classTimes ct ON c.id = ct.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE ct.weekday = ' + rmysql.escape(req.body.weekday) + ' AND ct.time >= ' + rmysql.escape(req.body.start) + ' AND ct.time <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+    if(err || result.length < 1) {
+      res.end('{"status": "failed", "message": "no matching classes"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 app.post('/api/getClassParticipants/', function(req, res) {
   try {
     check(req.body.classid).isNumeric();
@@ -918,7 +935,7 @@ app.post('/api/getClassParticipants/', function(req, res) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT u.id,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.classid = ' + req.body.classid + ' AND DATE(s.datetime) = "' + req.body.datetime + '" AND gu.token = ' + req.body.token, function(err, result, fields) {
+  rmysql.query('SELECT u.id,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.classid = ' + req.body.classid + ' AND DATE(s.datetime) = "' + req.body.datetime + '" AND gu.token = ' + rmysql.escape(req.body.token), function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
@@ -941,8 +958,7 @@ app.post('/api/addClass/', function(req, res){
   } else {
     var spots = req.body.spots
   }
-  console.log('INSERT INTO classes (gymid,service,duration,price,spots) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')));
-  wmysql.query('INSERT INTO classes (gymid,service,duration,price,spots,desc) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ',' + wmysql.escape(req.body.description) + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('INSERT INTO classes (gymid,service,duration,price,spots,`desc`) SELECT gymid,' + wmysql.escape(req.body.service) + ',' + wmysql.escape(req.body.duration) + ',' + req.body.price + ',' + spots + ',' + wmysql.escape(req.body.description) + ' FROM gymUsers WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to add class"}');
     } else {
@@ -1035,15 +1051,15 @@ app.post('/api/updateClass/', function(req, res){
 });
 
 
-app.del('/api/deleteClass/', function(req, res){  
+app.del('/api/deleteClass/:cid', function(req, res){  
   try {
     check(req.header('token')).notNull();
-    check(req.body.classid).isNumeric()
+    check(req.params.cid).isNumeric()
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  wmysql.query('DELETE c FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+  wmysql.query('DELETE c FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.params.cid + ' AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to delete class"}');
     } else {
