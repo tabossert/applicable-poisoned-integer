@@ -2,6 +2,10 @@ __author__ = 'tbossert'
 
 #!/usr/bin/python
 
+####################
+## NO LONGER USED ##
+####################
+
 import MySQLdb as mdb
 import sys
 from datetime import datetime, timedelta
