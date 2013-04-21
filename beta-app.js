@@ -61,6 +61,13 @@ var rmysql = _mysql.createConnection({
     password: RMYSQL_PASS,
 });
 
+var amysql = _mysql.createConnection({
+    host: AHOST,
+    port: APORT,
+    user: AMYSQL_USER,
+    password: AMYSQL_PASS,
+});
+
 
 try {
   wmysql.connect(function(err) {
@@ -86,16 +93,29 @@ try {
       throw new Error('Unable to Connect to SQL Slave');
       return;	
 }
-
+try {
+  amysql.connect(function(err) {
+    if(err) {
+      throw new Error('Unable to Connect to SQL Analytics');
+    } else {
+      console.log("Connected to SQL Slave");
+    }
+  });
+} catch (e) {
+      throw new Error('Unable to Connect to SQL Analytics');
+      return; 
+}
 
 wmysql.query('use ' + WDATABASE);
 rmysql.query('use ' + RDATABASE);
+amysql.query('use ' + ADATABASE);
 
 
 setInterval(keepAlive, 60000);
 function keepAlive() {
     wmysql.query('SELECT 1');
     rmysql.query('SELECT 1');
+    amysql.query('SELECT 1');
     console.log("Fired Keep-Alive");
     return;
 }
@@ -1357,6 +1377,48 @@ app.post('/api/gymSchedule/', function(req, res){
 });
 
 
+/*app.post('/api/getSCIDs/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    //check(req.body.classid).isNumeric();
+    //check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    //check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  rmysql.query('SELECT sc.id,sc.datetime,sc.active,sc.price,sc.spots FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE datetime >= ' + rmysql.escape(req.body.start) + ' AND datetime = ' + rmysql.escape(req.body.end) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+    if(err || result.length < 1) {
+      res.end('{"status": "failed", "message": "unable to retreive"}');
+    } else {
+      res.send(result);
+    }
+  });
+});*/
+
+
+app.post('/api/getSCIDs/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+    //check(req.body.classid).isNumeric();
+    //check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+    //check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  console.log('SELECT sc.id,sc.datetime,sc.price,sc.spots,sc.active FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime < ' + rmysql.escape(req.body.end) + ' AND gu.token = ' + rmysql.escape(req.header('token')))
+  rmysql.query('SELECT sc.id,sc.datetime,sc.price,sc.spots,sc.active FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime < ' + rmysql.escape(req.body.end) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+    if(err || result.length < 1) {
+      res.send(result);
+      //res.end('{"status": "failed", "message": "unable to retreive"}');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+
 app.post('/api/getSCID/', function(req, res){
   try {
     check(req.header('token')).notNull();
@@ -1758,7 +1820,67 @@ app.post('/api/newReward/', function(req, res) {
 
 
 // Analytics calls
+//Get partner stats per hour for a given day (psph - partner stats per hour)
+app.post('/api/barbell/psph', function(req, res){
+  try {
+    check(req.header('token')).notNull;
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);    
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;    
+  }
+  amysql.query('SELECT gh.datetime AS dt,gh.reservations,gh.visits,gh.views,gh.amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')),function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.send('{"status": "failed", "message":"invalid token"}',401);
+    } else {
+      res.send(result);
+    }
+  });
+});
 
+//Get partner stats per day for a given time period (psptp - partner stats per time period)
+app.post('/api/barbell/psptp', function(req, res){
+  try {
+    check(req.header('token')).notNull;
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);    
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;    
+  }
+  amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.send('{"status": "failed", "message":"invalid token"}',401);
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+
+//Get partner stats per day for a given week and previous week (pspwp - partner stats per week percentage)
+app.post('/api/barbell/pspwp', function(req, res){
+  try {
+    check(req.header('token')).notNull;
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);    
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;    
+  }
+  amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
+    if (err || result.length < 1) {
+      res.send('{"status": "failed", "message":"invalid token"}',401);
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+
+
+//OLD CALLS
 app.post('/api/barbell/pcbh/', function(req, res){
   try {
     check(req.header('token')).notNull();
@@ -1768,7 +1890,7 @@ app.post('/api/barbell/pcbh/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT gymid FROM gymusers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+  rmysql.query('SELECT gymid FROM barbell.gymUsers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
       res.end('{"status": "failed", "message":"invalid token"}',401);
     } else {
@@ -1784,7 +1906,7 @@ app.post('/api/barbell/pcbh/', function(req, res){
 });
 
 
-app.post('/api/barbell/pcbd/', function(req, res){
+/*app.post('/api/barbell/pcbd/', function(req, res){
   try {
     check(req.header('token')).notNull();
     check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
@@ -1807,7 +1929,7 @@ app.post('/api/barbell/pcbd/', function(req, res){
     }
   });
 });
-
+*/
 
 app.post('/api/barbell/appc/', function(req, res){
   try {
@@ -1911,7 +2033,7 @@ app.post('/api/barbell/cdbp/', function(req, res){
   });
 });
 
-
+/*
 app.post('/api/barbell/cdbt/', function(req, res){
   try {
     check(req.header('token')).notNull();
@@ -1957,8 +2079,8 @@ app.post('/api/barbell/cdbt/', function(req, res){
     }
   });
 });
-
-
+*/
+/*
 app.post('/api/barbell/gdbt/', function(req, res){
   try {
     check(req.header('token')).notNull();
@@ -2004,7 +2126,7 @@ app.post('/api/barbell/gdbt/', function(req, res){
     }
   });
 });
-
+*/
 
 //ADMIN Section of calls
 
@@ -2260,9 +2382,9 @@ if (cluster.isMaster) {
   });
 } else {
   // Set Server to listen on specified ports
-  http.createServer(app).listen(80);
-  console.log("started server on 80");
+  http.createServer(app).listen(81);
+  console.log("started server on 81");
 
-  https.createServer(options, app).listen(443);
-  console.log("started server on 443");
+  https.createServer(options, app).listen(444);
+  console.log("started server on 444");
 }
