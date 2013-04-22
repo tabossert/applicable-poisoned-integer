@@ -44,7 +44,7 @@ var AHOST = '127.0.0.1';
 var APORT = 3306;
 var AMYSQL_USER = 'barbell';
 var AMYSQL_PASS = '10Reps f0r perf3Ction!';
-var ADATABASE = 'zunefit';
+var ADATABASE = 'barbell';
 
 
 var wmysql = _mysql.createConnection({
@@ -1843,13 +1843,14 @@ app.post('/api/barbell/psph', function(req, res){
 app.post('/api/barbell/psptp', function(req, res){
   try {
     check(req.header('token')).notNull;
-    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);
-    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);    
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}/i);
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}/i);    
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;    
   }
   amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
+    console.log('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt');
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
@@ -1863,13 +1864,14 @@ app.post('/api/barbell/psptp', function(req, res){
 app.post('/api/barbell/pspwp', function(req, res){
   try {
     check(req.header('token')).notNull;
-    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);
-    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2}/i);    
+    check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}/i);
+    check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}/i);    
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;    
   }
   amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
+    console.log('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt');
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
@@ -2382,9 +2384,9 @@ if (cluster.isMaster) {
   });
 } else {
   // Set Server to listen on specified ports
-  http.createServer(app).listen(81);
-  console.log("started server on 81");
+  http.createServer(app).listen(80);
+  console.log("started server on 80");
 
-  https.createServer(options, app).listen(444);
-  console.log("started server on 444");
+  https.createServer(options, app).listen(443);
+  console.log("started server on 443");
 }
