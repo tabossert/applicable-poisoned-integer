@@ -568,7 +568,7 @@ app.post('/api/userSchedule/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.sclassid,c.service,c.duration,c.image,s.datetime FROM schedule s INNER JOIN classes c ON (s.sclassid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
+  rmysql.query('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.sclassid,c.service,c.duration,c.image,s.datetime FROM schedule s INNER JOIN scheduledClass sc ON (s.sclassid = sc.id) INNER JOIN classes c ON (sc.classid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
     if (err) {
       res.end('{"status": "failed", "message": "unable to update"}');
     } else {
@@ -1075,8 +1075,8 @@ app.get('/api/getClass/:cid', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid);
-  rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid, function(err, result, fields) {
+  //console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid);
+  rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone FROM classes c INNER JOIN scheduledClass sc ON sc.classid = c.id INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE sc.id = ' + req.params.cid, function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
