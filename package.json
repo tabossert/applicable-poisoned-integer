@@ -1,19 +1,28 @@
 {
-  "name": "zunefit-api",
+  "name": "fitstew-api",
   "version": "0.0.5",
   "private": true,
   "scripts": {
     "start": "node app"
   },
   "dependencies": {
-    "express": "3.0.5",
-    "connect": "2.7.1", 
+    "express": "*",
+    "connect": "*", 
     "jade": "*",
-    "mysql": "2.0.0-alpha5",
-    "mongoose": "3.5.2",
-    "janrain-api": "0.0.1",
-    "geo": "0.0.3",
-    "forever": "0.10.0",
-    "validator": "0.4.19" 
+    "mysql": "*",
+    "mongoose": "*",
+    "janrain-api": "*",
+    "geo": "*",
+    "geoip-lite": "*",
+    "forever": "*",
+    "validator": "*",
+    "moment": "*",
+    "winston": "*",
+    "string": "*",
+    "crypto": "*",
+    "domain": "*",
+    "express-winston": "*", 
+    "cloudfiles": "*",
+    "stripe": "*"
   }
 }

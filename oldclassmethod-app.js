@@ -30,21 +30,21 @@ var express = require('express')
 */
 var WHOST = '127.0.0.1';
 var WPORT = 3306;
-var WMYSQL_USER = 'fitstewAPI';
+var WMYSQL_USER = 'zunefitAPI';
 var WMYSQL_PASS = 'F1tn3ss is WHERE! its @';
-var WDATABASE = 'fitstew';
+var WDATABASE = 'zunefit';
 
 var RHOST = '127.0.0.1';
 var RPORT = 3306;
-var RMYSQL_USER = 'fitstewAPI';
+var RMYSQL_USER = 'zunefitAPI';
 var RMYSQL_PASS = 'F1tn3ss is WHERE! its @';
-var RDATABASE = 'fitstew';
+var RDATABASE = 'zunefit';
 
 var AHOST = '127.0.0.1';
 var APORT = 3306;
 var AMYSQL_USER = 'barbell';
 var AMYSQL_PASS = '10Reps f0r perf3Ction!';
-var ADATABASE = 'barbell';
+var ADATABASE = 'zunefit';
 
 
 var wmysql = _mysql.createConnection({
@@ -548,7 +548,7 @@ app.post('/api/userSchedule/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.sclassid,c.service,c.duration,c.image,s.datetime FROM schedule s INNER JOIN classes c ON (s.sclassid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
+  rmysql.query('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.classid,c.service,c.duration,c.image,s.datetime FROM schedule s INNER JOIN classes c ON (s.classid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
     if (err) {
       res.end('{"status": "failed", "message": "unable to update"}');
     } else {
@@ -581,7 +581,7 @@ app.post('/api/userSchedule/', function(req, res){
   });    
 });*/
 
-//||||||THIS ONE||||||\\ - THIS ONE IS GOOD
+//||||||THIS ONE||||||\\
 app.post('/api/userCheckinByGym/', function(req, res) {
    try {
     check(req.header('token')).notNull();
@@ -602,7 +602,7 @@ app.post('/api/userCheckinByGym/', function(req, res) {
   });
 });
 
-//||||||THIS ONE||||||\\ - THIS ONE IS GOOD
+//||||||THIS ONE||||||\\
 app.post('/api/deleteCheckinByGym/', function(req, res) {
    try {
     check(req.header('token')).notNull();
@@ -774,7 +774,7 @@ app.post('/api/updateUserPreferences/', function(req, res){
   });
 });
 
-//||||||THIS ONE||||||\\ - UPDATED
+//||||||THIS ONE||||||\\
 app.post('/api/addEvent/', function(req, res){
   try {
     check(req.header('ltype')).isAlphanumeric();
@@ -785,96 +785,70 @@ app.post('/api/addEvent/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-
-  function checkClass(classid,datetime,callback) {
-    console.log('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime));
-    rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
-      if(err) {
-        res.end('{"status": "failed", "message": "unable to schedule"}');
-      } else if (result.length < 1) {
-        console.log('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',1,price,gymid,spots FROM classes WHERE id = ' + req.body.classid);
-        wmysql.query('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',1,price,gymid,spots FROM classes WHERE id = ' + req.body.classid,function(err, sresult, fields) {
-          callback(sresult.insertId);
-        });
-      } else {
-        if(result.active == 0) {
-          res.end('{"status": "failed", "message": "class cancelled"}');
+  rmysql.query('SELECT s.id FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime +  '" AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(result.length > 0) {
+      res.end('{"status": "failed", "message": "already scheduled"}');
+    } else { 
+      rmysql.query('SELECT gymid,price FROM classes WHERE id = ' + req.body.classid, function(err, result, fields) {
+        if(err || result.length < 1) {
+          res.end('{"status": "failed", "message": "no class found"}');
         } else {
-          console.log(result)
-          callback(result[0].id);
+          var price = result[0].price;
+          var gymid = result[0].gymid;
+          rmysql.query('SELECT c.spots - COUNT(s.classid) AS openSpots FROM schedule s INNER JOIN classes c ON s.classid = c.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
+            console.log(result.length)
+            if(err || result.length < 1) {
+              res.end('{"status": "failed", "message": "no class found"}');
+            } else if (result[0].openSpots < 1) {
+              res.end('{"status": "failed", "message": "class full"}');
+            } else {
+              rmysql.query('SELECT u.id AS uid,b.refillamount,b.cToken FROM users u INNER JOIN balance b ON u.id = b.userid WHERE b.minamount > u.balance - ' + price + ' AND b.automatic = true AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+                if(result.length > 0) {
+                  var uid = result[0].uid;
+                  var amount = result[0].refillamount * 100;
+                  stripe.charges.create({ amount: amount, currency: 'usd', customer: result[0].cToken }, function(err,charge) {
+                    if(err) {
+                      res.end("refill not setup");
+                    } else {
+                      wmysql.query('CALL refillBalance(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ')', function(err, bresult, fields) {
+    		                if(err || bresult.length < 1 || bresult.length == 'undefined') {
+                          var ts = Math.round((new Date()).getTime() / 1000);
+                          fs.writeFile("logs/failedBalanceUpdate.log", uid + ',' + amount + ',' + ts, function(err) {
+                            if(err) {
+                              console.log('Unable to save to log');
+                            } else {
+                              console.log('Failure saved to log');
+                            }
+                          });
+                          res.end('{"status": "failed", "message": "unable to refill balance"}');
+                        } else {
+                          wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
+                            if(err || result.length < 1) {
+                              res.end('{"status": "failed", "message": "unable to add event"}');
+                            } else {
+                              res.end('{' + result[0][0].transMess + '}');
+                            }
+                          });
+                        }
+                      });
+                    }
+                  });
+                } else {
+                  console.log('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + gymid +',"' + req.body.datetime + '")'   );
+                  wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.classid + ',' + gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
+                    if(err || result.length < 1) {
+                      res.end('{"status": "failed", "message": "unable to add event6"}');
+                    } else {
+                      res.end('{' + result[0][0].transMess + '}');
+                    }
+                  });
+                }
+              });
+            }
+          });
         }
-      }
-    });
-  }
-
-  checkClass(req.body.classid,req.body.datetime,function(scid) {
-    console.log('SELECT s.id FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.sclassid = ' + scid + ' AND s.datetime = "' + req.body.datetime +  '" AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')));
-    rmysql.query('SELECT s.id FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE s.sclassid = ' + scid + ' AND s.datetime = "' + req.body.datetime +  '" AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-      if(result.length > 0) {
-        res.end('{"status": "failed", "message": "already scheduled"}');
-      } else {
-        console.log('SELECT gymid,price FROM scheduledClass WHERE id = ' + scid); 
-        rmysql.query('SELECT gymid,price FROM scheduledClass WHERE id = ' + scid, function(err, result, fields) {
-          if(err || result.length < 1) {
-            res.end('{"status": "failed", "message": "no class found"}');
-          } else {
-            var price = result[0].price;
-            var gymid = result[0].gymid;
-            console.log('SELECT sc.spots - COUNT(s.sclassid) AS openSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE s.sclassid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"');
-            rmysql.query('SELECT sc.spots - COUNT(s.sclassid) AS openSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE s.sclassid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
-              console.log(result);
-              if (err || result[0].openSpots < 1) {
-                console.log('SELECT u.id AS uid,b.refillamount,b.cToken FROM users u INNER JOIN balance b ON u.id = b.userid WHERE b.minamount > u.balance - ' + price + ' AND b.automatic = true AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')));
-                rmysql.query('SELECT u.id AS uid,b.refillamount,b.cToken FROM users u INNER JOIN balance b ON u.id = b.userid WHERE b.minamount > u.balance - ' + price + ' AND b.automatic = true AND u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-                  if(result.length > 0) {
-                    var uid = result[0].uid;
-                    var amount = result[0].refillamount * 100;
-                    stripe.charges.create({ amount: amount, currency: 'usd', customer: result[0].cToken }, function(err,charge) {
-                      if(err) {
-                        res.end("refill not setup");
-                      } else {
-                        wmysql.query('CALL refillBalance(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ')', function(err, bresult, fields) {
-      		                if(err || bresult.length < 1 || bresult.length == 'undefined') {
-                            var ts = Math.round((new Date()).getTime() / 1000);
-                            fs.writeFile("logs/failedBalanceUpdate.log", uid + ',' + amount + ',' + ts, function(err) {
-                              if(err) {
-                                console.log('Unable to save to log');
-                              } else {
-                                console.log('Failure saved to log');
-                              }
-                            });
-                            res.end('{"status": "failed", "message": "unable to refill balance"}');
-                          } else {
-                            wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + scid + ',' + gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
-                              if(err || result.length < 1) {
-                                res.end('{"status": "failed", "message": "unable to add event"}');
-                              } else {
-                                res.end('{' + result[0][0].transMess + '}');
-                              }
-                            });
-                          }
-                        });
-                      }
-                    });
-                  } else {
-                    console.log('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + scid+ ',' + gymid +',"' + req.body.datetime + '")'   );
-                    wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + scid + ',' + gymid +',"' + req.body.datetime + '")', function(err, result, fields) {
-                      if(err || result.length < 1) {
-                        res.end('{"status": "failed", "message": "unable to add event6"}');
-                      } else {
-                        res.end('{' + result[0][0].transMess + '}');
-                      }
-                    });
-                  }
-                });
-              } else if(result[0].openSpots < 1){
-                res.end('{"status": "failed", "message": "class full"}');
-              }
-            });
-          }
-        });
-      }
-    });
+      });
+    }
   });
 });
 
@@ -948,7 +922,7 @@ app.get('/api/getClasses/:gid', function(req, res){
 
 
 app.post('/api/classSize/', function(req, res){
-  rmysql.query('SELECT c.spots - COUNT(s.sclassid) AS openSpots,c.spots AS maxSpots FROM schedule s INNER JOIN classes c ON s.sclassid = c.id WHERE s.sclassid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
+  rmysql.query('SELECT c.spots - COUNT(s.classid) AS openSpots,c.spots AS maxSpots FROM schedule s INNER JOIN classes c ON s.classid = c.id WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no class matching id"}');
     } else {
@@ -975,7 +949,7 @@ app.post('/api/getDayClasses/', function(req, res){
   });
 });
 
-//||||||THIS ONE||||||\\ - UPDATED
+//||||||THIS ONE||||||\\
 app.post('/api/getNextClasses/', function(req, res) {
   try {
     check(req.header('token')).notNull();
@@ -983,8 +957,8 @@ app.post('/api/getNextClasses/', function(req, res) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log('SELECT sc.id,c.service,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')))
-  rmysql.query('SELECT sc.id,c.service,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  console.log('SELECT c.id,c.service,ct.time FROM classes c INNER JOIN classTimes ct ON c.id = ct.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE ct.weekday = ' + rmysql.escape(req.body.weekday) + ' AND ct.time >= ' + rmysql.escape(req.body.start) + ' AND  gu.token = ' + rmysql.escape(req.header('token')))
+  rmysql.query('SELECT c.id,c.service,ct.time FROM classes c INNER JOIN classTimes ct ON c.id = ct.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE ct.weekday = ' + rmysql.escape(req.body.weekday) + ' AND ct.time >= ' + rmysql.escape(req.body.start) + ' AND  gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching classes"}');
     } else {
@@ -993,7 +967,7 @@ app.post('/api/getNextClasses/', function(req, res) {
   });
 });
 
-//||||||THIS ONE||||||\\ - UPDATED
+//||||||THIS ONE||||||\\
 app.post('/api/getClassParticipants/', function(req, res) {
   try {
     check(req.body.classid).isNumeric();
@@ -1002,8 +976,8 @@ app.post('/api/getClassParticipants/', function(req, res) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.sclassid = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')));
-  rmysql.query('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.sclassid = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  console.log('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '" AND gu.token = ' + rmysql.escape(req.header('token')));
+  rmysql.query('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.classid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '" AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
@@ -1055,8 +1029,8 @@ app.get('/api/getClass/:cid', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid);
-  rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid, function(err, result, fields) {
+  console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid);
+  rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid, function(err, result, fields) {
    if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching class"}');
     } else {
@@ -1348,7 +1322,7 @@ app.post('/api/gymSchedule/', function(req, res){
     return;
   }
     console.log()
-    rmysql.query('SELECT u.id AS uid,s.id AS sid,c.id as cid,u.first_name,u.last_name,c.service,c.duration,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.sclassid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
+    rmysql.query('SELECT u.id AS uid,s.id AS sid,c.id as cid,u.first_name,u.last_name,c.service,c.duration,DATE_FORMAT(s.datetime, "%M %D %Y ") AS date,TIME(s.datetime) AS time FROM schedule s INNER JOIN users u ON s.userid = u.id INNER JOIN classes c ON s.classid = c.id INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to retreive"}');
     } else {
@@ -1359,67 +1333,6 @@ app.post('/api/gymSchedule/', function(req, res){
 
 //||||||THIS ONE||||||\\
 //Need call to cancel class by partner
-app.post('/api/cancelClass/', function(req, res) {
-  rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
-    if(result.length < 1) {
-      wmysql.query('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',0,c.price,c.gymid,c.spots FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-        if(err) {
-          res.end('{"status": "failed", "message": "unable to cancel"}');
-        } else {
-          res.end('{"status": "success"}');
-        }
-      });
-    } else {
-      wmysql.query('UPDATE scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid SET active = 0 WHERE sc.classid = ' + req.body.classid + ' AND sc.datetime = ' + wmysql.escape(req.body.datetime) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-        if(err) {
-          res.send('{"status": "failed", "message": "unable to cancel"}');
-        } else {
-          res.end('{"status": "success"}');
-        }
-      }); 
-    }
-  });
-});
-
-
-app.post('/api/changeClass/', function(req, res) {
-  rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
-    if(result.length < 1) {
-      wmysql.query('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',0,' + req.body.price + ',c.gymid,' + req.body.spots + ' FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-        if(err) {
-          res.end('{"status": "failed", "message": "unable to cancel"}');
-        } else {
-          res.end('{"status": "success"}');
-        }
-      });
-    } else {
-      wmysql.query('UPDATE scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid SET datetime = ' + req.body.datetime + ',spots = ' + req.body.spots + ',price = ' + req.body.price + ' WHERE sc.classid = ' + req.body.classid + ' AND sc.datetime = ' + wmysql.escape(req.body.datetime) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-        if(err || result.length < 1) {
-          res.send('{"status": "failed", "message": "unable to change class"}');
-        } else {
-          res.end('{"status": "success"}');
-        }
-      }); 
-    }
-  });
-});
-
-app.post('/api/reviveClass/', function(req, res) {
-  rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
-    if(err || result.length < 1) {
-      res.end('{"status": "failed", "message": "unable to revive class"}');
-    } else {
-      console.log('UPDATE scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid SET active = 1 WHERE sc.classid = ' + req.body.classid + ' AND sc.datetime = ' + wmysql.escape(req.body.datetime) + ' AND gu.token = ' + rmysql.escape(req.header('token')))
-      wmysql.query('UPDATE scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid SET active = 1 WHERE sc.classid = ' + req.body.classid + ' AND sc.datetime = ' + wmysql.escape(req.body.datetime) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-        if(err || result.length < 1) {
-          res.send('{"status": "failed", "message": "unable to revive"}');
-        } else {
-          res.end('{"status": "success"}');
-        }
-      }); 
-    }
-  });
-});
 
 
 app.get('/api/getTags/:gid', function(req, res){
