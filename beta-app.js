@@ -44,8 +44,7 @@ var AHOST = '127.0.0.1';
 var APORT = 3306;
 var AMYSQL_USER = 'barbell';
 var AMYSQL_PASS = '10Reps f0r perf3Ction!';
-var ADATABASE = 'barbell';
-
+var ADATABASE = 'fitstew';
 
 var wmysql = _mysql.createConnection({
     host: WHOST,
@@ -396,6 +395,7 @@ app.get('/api/gymInfo/:gymId', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
+  console.log('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.contact,g.rate,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM gyms g INNER JOIN hours h ON g.id = h.gymid WHERE g.id = ' + rmysql.escape(req.params.gymId));
   rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.contact,g.rate,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM gyms g INNER JOIN hours h ON g.id = h.gymid WHERE g.id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message": "no gym matches"}');
@@ -746,9 +746,26 @@ app.get('/api/getMessage/', function(req, res) {
 });
 
 
+app.get('/api/gymLogout/', function(req, res){
+  try {
+    check(req.header('token')).notNull();
+  } catch (e) {
+    res.end('{"status": "failed", "message":"' + e.message + '"}');
+    return;
+  }
+  wmysql.query('UPDATE gymUsers SET token = null WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+    if(err || result.length < 1) {
+      res.end('{"status": "failed", "message": "unable to logout"}'); 
+    } else {
+      res.end('{"status": "success"}');
+    }
+  });
+})
+
+
 app.post('/api/gymLogin/', function(req, res){
   try {
-    check(req.body.username).len(1,12).isAlphanumeric()
+    //check(req.body.username).len(1,12).isAlphanumeric()
   } catch (e) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
@@ -995,7 +1012,7 @@ app.post('/api/getDayClasses/', function(req, res){
   });
 });
 
-//||||||THIS ONE||||||\\ - UPDATED
+//||||||THIS ONE||||||\\ - UPDATED  - WHERE AM I USING THIS ONE??
 app.post('/api/getNextClasses/', function(req, res) {
   try {
     check(req.header('token')).notNull();
@@ -1003,8 +1020,8 @@ app.post('/api/getNextClasses/', function(req, res) {
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  console.log('SELECT sc.id,c.service,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')))
-  rmysql.query('SELECT sc.id,c.service,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+  console.log('SELECT sc.id,c.id,c.service,sc.active,sc.price,sc.spots,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')))
+  rmysql.query('SELECT sc.id,c.id,c.service,sc.active,sc.price,sc.spots,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "no matching classes"}');
     } else {
@@ -1012,6 +1029,9 @@ app.post('/api/getNextClasses/', function(req, res) {
     }
   });
 });
+
+
+
 
 //||||||THIS ONE||||||\\ - UPDATED
 app.post('/api/getClassParticipants/', function(req, res) {
@@ -1238,6 +1258,7 @@ app.post('/api/updateGymProfile/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
+  console.log('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid set g.address = ' + wmysql.escape(req.body.address) + ',g.city = ' + wmysql.escape(req.body.city) + ',g.state = ' + wmysql.escape(req.body.state) + ',g.zipcode = ' + req.body.zipcode + ',g.phone = ' + req.body.phone + ',g.email = ' + wmysql.escape(req.body.email) + ',g.contact = ' + wmysql.escape(req.body.contact) + ',g.image = ' + wmysql.escape(req.body.image) + ',g.facebook = ' + wmysql.escape(req.body.facebook) + ',g.twitter = ' + wmysql.escape(req.body.twitter) + ',g.googleplus = ' + wmysql.escape(req.body.googleplus) + ',g.url = ' + wmysql.escape(req.body.url) + ',g.complete = true WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')));
   wmysql.query('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid set g.address = ' + wmysql.escape(req.body.address) + ',g.city = ' + wmysql.escape(req.body.city) + ',g.state = ' + wmysql.escape(req.body.state) + ',g.zipcode = ' + req.body.zipcode + ',g.phone = ' + req.body.phone + ',g.email = ' + wmysql.escape(req.body.email) + ',g.contact = ' + wmysql.escape(req.body.contact) + ',g.image = ' + wmysql.escape(req.body.image) + ',g.facebook = ' + wmysql.escape(req.body.facebook) + ',g.twitter = ' + wmysql.escape(req.body.twitter) + ',g.googleplus = ' + wmysql.escape(req.body.googleplus) + ',g.url = ' + wmysql.escape(req.body.url) + ',g.complete = true WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
     if(err || result.length < 1) {
       res.end('{"status": "failed", "message": "unable to update gym"}');
@@ -1830,7 +1851,7 @@ app.post('/api/barbell/psph', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;    
   }
-  amysql.query('SELECT gh.datetime AS dt,gh.reservations,gh.visits,gh.views,gh.amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')),function(err, result, fields) {
+  amysql.query('SELECT gh.datetime AS dt,gh.reservations,gh.visits,gh.views,gh.amount FROM barbell.gymhourly gh INNER JOIN fitstew.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')),function(err, result, fields) {
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
@@ -1849,7 +1870,8 @@ app.post('/api/barbell/psptp', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;    
   }
-  amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
+  console.log('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN fitstew.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt')
+  amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN fitstew.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
@@ -1869,7 +1891,7 @@ app.post('/api/barbell/pspwp', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;    
   }
-  amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN barbell.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
+  amysql.query('SELECT DATE_FORMAT(gh.datetime , "%Y-%m-%d") AS dt,SUM(gh.reservations) as reservations,SUM(gh.visits) AS visits,SUM(gh.views) as views,SUM(gh.amount) AS amount FROM barbell.gymhourly gh INNER JOIN fitstew.gymUsers gu on gh.gymid = gu.gymid AND gh.datetime >= ' + amysql.escape(req.body.start) + ' AND gh.datetime < ' + amysql.escape(req.body.end) + ' AND gu.token = ' + amysql.escape(req.header('token')) + ' GROUP BY dt',function(err, result, fields) {
     if (err || result.length < 1) {
       res.send('{"status": "failed", "message":"invalid token"}',401);
     } else {
@@ -1890,7 +1912,7 @@ app.post('/api/barbell/pcbh/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
-  rmysql.query('SELECT gymid FROM barbell.gymUsers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
+  rmysql.query('SELECT gymid FROM fitstew.gymUsers WHERE token = "' + req.header('token') + '"', function(err, result, fields) {
     if (err || result.length < 1) {
       res.end('{"status": "failed", "message":"invalid token"}',401);
     } else {
