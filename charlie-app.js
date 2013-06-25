@@ -44,7 +44,7 @@ var AHOST = '127.0.0.1';
 var APORT = 3306;
 var AMYSQL_USER = 'barbell';
 var AMYSQL_PASS = '10Reps f0r perf3Ction!';
-var ADATABASE = 'barbell';
+var ADATABASE = 'fitstew';
 
 
 var wmysql = _mysql.createConnection({

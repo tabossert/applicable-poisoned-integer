@@ -44,7 +44,7 @@ var AHOST = '127.0.0.1';
 var APORT = 3306;
 var AMYSQL_USER = 'barbell';
 var AMYSQL_PASS = '10Reps f0r perf3Ction!';
-var ADATABASE = 'barbell';
+var ADATABASE = 'fitstew';
 
 
 var wmysql = _mysql.createConnection({
@@ -548,6 +548,7 @@ app.post('/api/userSchedule/', function(req, res){
     res.end('{"status": "failed", "message":"' + e.message + '"}');
     return;
   }
+  console.log('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.sclassid,c.service,c.duration,c.image,s.datetime FROM schedule s INNER JOIN classes c ON (s.sclassid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime');
   rmysql.query('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.sclassid,c.service,c.duration,c.image,s.datetime FROM schedule s INNER JOIN classes c ON (s.sclassid = c.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
     if (err) {
       res.end('{"status": "failed", "message": "unable to update"}');
