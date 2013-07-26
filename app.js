@@ -206,8 +206,6 @@ var app = module.exports = express();
 // Set express server options
 app.configure(function(){
   app.use(allowCrossDomain);
-  app.set('views', __dirname + '/views');
-  app.set('view engine', 'jade');
   app.use(express.favicon());
   //app.use(connect.compress());
   app.use(express.static(__dirname + '/public'));
