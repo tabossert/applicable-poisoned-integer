@@ -50,21 +50,21 @@ var wmysql = _mysql.createConnection({
     host: WHOST,
     port: WPORT,
     user: WMYSQL_USER,
-    password: WMYSQL_PASS,
+    password: WMYSQL_PASS
 });
 
 var rmysql = _mysql.createConnection({
     host: RHOST,
     port: RPORT,
     user: RMYSQL_USER,
-    password: RMYSQL_PASS,
+    password: RMYSQL_PASS
 });
 
 var amysql = _mysql.createConnection({
     host: AHOST,
     port: APORT,
     user: AMYSQL_USER,
-    password: AMYSQL_PASS,
+    password: AMYSQL_PASS
 });
 
 
@@ -168,7 +168,7 @@ var CFclient = cloudfiles.createClient(CFconfig);
 
 
 // API config settings
-var engageAPI = janrain('8ebd390177383a0bd31e55ba97dfd27ec20c3eaf');
+var engageAPI = janrain('48246aaa6a20687bfc2e2075d09cff0749b3f041');
 var salt = 'oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$';
 var stripeKey = 'sk_test_fYUN8cMnv3xKCaTZjUG0Jxpv';
 var stripe = require('stripe')(stripeKey);
@@ -195,7 +195,7 @@ var options = {
   key: fs.readFileSync('ssl/api_zunefit.key'),
   ca: fs.readFileSync('ssl/api_zunefit_com.ca-bundle'),
   cert: fs.readFileSync('ssl/api_zunefit_com.crt'),
-  requestCert: true,
+  requestCert: true
 }
 
 
@@ -251,13 +251,13 @@ function getColor(token,callback) {
 // Begin routes
 app.get('/', function(req, res){
   res.render('index', {
-    title: 'ZuneFit',
+    title: 'ZuneFit'
   });
 });		
 
 
 app.get('/api/healthMe/', function(req, res){
-  rmysql.query('SELECT id FROM transactions LIMIT 1', function(err, result, fields) {
+  rmysql.query('SELECT id FROM transactions LIMIT 1', function(err, result) {
     if(err || result.length < 1) {
       res.send('"status": "failed"');
     } else {
