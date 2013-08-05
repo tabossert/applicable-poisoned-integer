@@ -9,7 +9,6 @@ var express = require('express')
   , connect = require('connect')
   , fs = require("fs")
   , path = require("path")
-  , routes = require('./routes')
   , S = require('string')
   , http = require('http')
   , https = require('https')
@@ -22,8 +21,8 @@ var express = require('express')
   , check = require('validator').check
   , sanitize = require('validator').sanitize
   , expressWinston = require('express-winston')
-  , winston = require('winston');
-
+  , winston = require('winston')
+  , route = require("./routes");
 
 /**
 * MySQL DB connection info and setup
@@ -192,15 +191,17 @@ var colorArr = ['#FF0000','#8A0808','FF8000','#F7FE2E','#00FF00','#0B610B','#00F
 
 // SSL Certificate values
 var options = {
-  key: fs.readFileSync('ssl/api_zunefit.key'),
-  ca: fs.readFileSync('ssl/api_zunefit_com.ca-bundle'),
-  cert: fs.readFileSync('ssl/api_zunefit_com.crt'),
+  key: fs.readFileSync('ssl/api.fitstew.com-key.pem'),
+  ca: fs.readFileSync('ssl/gd_bundle.crt'),
+  cert: fs.readFileSync('ssl/api.fitstew.com.crt'),
   requestCert: true
 }
 
 
+
 // Build initial express Server
 var app = module.exports = express();
+
 
 
 // Set express server options
@@ -235,6 +236,18 @@ app.configure(function(){
   });
 });
 
+route(app);
+
+
+/*module.exports = function(app) {
+    console.log('Loading routes from: ' + app.settings.routePath);
+    fs.readdirSync(app.settings.routePath).forEach(function(file) {
+        var route = app.settings.routePath + file.substr(0, file.indexOf('.'));
+        console.log('Adding route:' + route);
+        require(route)(app);
+    });
+}   */
+require('./routes')(app);
 
 // Functions
 function getColor(token,callback) {
@@ -246,6 +259,7 @@ function getColor(token,callback) {
     callback(colorArr[colorIndex]);
   });
 }
+
 
 
 // Begin routes
@@ -466,23 +480,6 @@ app.get('/api/featuredWorkouts/', function(req, res){
 });
 
 
-app.get('/api/balance/', function(req, res){
-  try {
-    check(req.header('ltype')).isAlphanumeric();
-    check(req.header('token')).notNull();
-  } catch (e) {
-    res.end('{"status": "failed", "message":"' + e.message + '"}');
-    return;
-  }
-  rmysql.query('SELECT balance FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-  if (err || result.length < 1) {
-     res.send('{"status": "failed", "message": "invalid token"}',401);
-    } else {
-      console.log(result);
-      res.send(result);
-    }
-  });
-});
 
 
 app.post('/api/updatePayment/', function(req, res){
@@ -519,6 +516,7 @@ app.get('/api/disbursement/', function(req, res){
     }
   });
 });
+
 
 
 app.post('/api/updateDisbursement/', function(req, res){
