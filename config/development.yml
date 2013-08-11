@@ -1,0 +1,42 @@
+Express:
+  http: 9090
+  https: 9443
+
+WDatabase:
+  WHOST: 127.0.0.1
+  WPORT: 3306
+  WMYSQL_USER: fitstewAPI
+  WMYSQL_PASS: F1tn3ss is WHERE! its @
+  WDATABASE: fitstew
+
+RDatabase:
+  RHOST: 127.0.0.1
+  RPORT: 3306
+  RMYSQL_USER: fitstewAPI
+  RMYSQL_PASS: F1tn3ss is WHERE! its @
+  RDATABASE: fitstew
+
+ADatabase:
+  AHOST: 127.0.0.1
+  APORT: 3306
+  AMYSQL_USER: barbell
+  AMYSQL_PASS: 10Reps f0r perf3Ction!
+  ADATABASE: fitstew
+
+Mongo:
+  HOST: mongodb://zunefit:zunefit@flame.mongohq.com:27041/zuneGeo
+
+CloudFiles:
+  username: tbossert
+  apiKey: 32f0b1d0ec09dce0214e2788234c8a67
+  host : identity.api.rackspacecloud.com
+  CFContainer: https://133ebe4227c90a13f1dc-8c7ec5384ed7d5bfa249897c03b2f07c.ssl.cf2.rackcdn.com/
+
+Janrain:
+  Key: 48246aaa6a20687bfc2e2075d09cff0749b3f041
+
+Stripe:
+  stripeKey: sk_test_fYUN8cMnv3xKCaTZjUG0Jxpv
+
+Hash:
+  salt: oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$
