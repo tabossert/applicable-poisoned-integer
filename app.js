@@ -123,9 +123,7 @@ fs.readdirSync(routePath).forEach(function(file) {
 
 // Default Route
 app.get('/', function(req, res){
-  res.render('index', {
-    title: 'ZuneFit'
-  });
+  res.send('FitStew API')
 });	
 
 // Health Check Route
