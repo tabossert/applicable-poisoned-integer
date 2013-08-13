@@ -29,7 +29,7 @@ module.exports = function(app) {
     });
   }
 
-  app.get('/api/getClassList/', function(req, res){
+  app.get('/api/classList/', function(req, res){
     rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + wmysql.escape(req.header('token')) + ' ORDER BY service', function(err, result, fields) {
      if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no matching gym"}');
@@ -40,7 +40,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/getClassesByPartner/', function(req, res) {
+  app.get('/api/classesByPartner/:start/:end', function(req, res) {
     console.log('SELECT sc.id AS scid,c.id AS cid,c.service,c.color,sc.active,sc.price,sc.spots,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')))
     rmysql.query('SELECT sc.id AS scid,c.id AS cid,c.service,c.color,sc.active,sc.price,sc.spots,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
      if(err || result.length < 1) {
@@ -52,7 +52,7 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/getClasses/:gid', function(req, res){
+  app.get('/api/classes/:gid', function(req, res){
     try {
       check(req.params.gid).isNumeric();
     } catch (e) {
@@ -70,7 +70,7 @@ module.exports = function(app) {
     }
     search = search + "service";
 
-    rmysql.query('select id,gymid,service,instructor,duration,price,spots,`desc`,image from classes where gymid = ' + req.params.gid + ' ORDER BY FIELD(service,' + search + ',service) ASC', function(err, result, fields) {
+    rmysql.query('select id,gymid,service,instructor,duration,price,spots,`desc`,image from classes where gymid = ' + rmysql.escape(req.params.gid) + ' ORDER BY FIELD(service,' + search + ',service) ASC', function(err, result, fields) {
      if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no results"}');
       } else {
@@ -80,8 +80,8 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/classSize/', function(req, res){
-    rmysql.query('SELECT sc.spots - COUNT(s.sclassid) AS openSpots,sc.spots AS maxSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE s.sclassid = ' + req.body.classid + ' AND s.datetime = "' + req.body.datetime + '"', function(err, result, fields) {
+  app.get('/api/classSize/:classId/:datetime', function(req, res){
+    rmysql.query('SELECT sc.spots - COUNT(s.sclassid) AS openSpots,sc.spots AS maxSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE s.sclassid = ' + rmysql.escape(req.params.classId) + ' AND s.datetime = "' + rmysql.escape(req.params.datetime) + '"', function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no class matching id"}');
       } else {
@@ -91,7 +91,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/getDayClasses/', function(req, res){
+  app.post('/api/dayClasses/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -110,15 +110,15 @@ module.exports = function(app) {
 
 
 
-  app.post('/api/getNextClasses/', function(req, res) {
+  app.post('/api/nextClasses/:start/:end', function(req, res) {
     try {
       check(req.header('token')).notNull();
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    console.log('SELECT sc.id,sc.classid,sc.service,sc.active,sc.price,sc.spots,sc.datetime FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')) + ' ORDER BY sc.datetime')
-    rmysql.query('SELECT sc.id,sc.classid,sc.service,sc.active,sc.price,sc.spots,sc.datetime FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')) + ' ORDER BY sc.datetime', function(err, result, fields) {
+    console.log('SELECT sc.id,sc.classid,sc.service,sc.active,sc.price,sc.spots,sc.datetime FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.params.start) + ' AND sc.datetime <= ' + rmysql.escape(req.params.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')) + ' ORDER BY sc.datetime')
+    rmysql.query('SELECT sc.id,sc.classid,sc.service,sc.active,sc.price,sc.spots,sc.datetime FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.params.start) + ' AND sc.datetime <= ' + rmysql.escape(req.params.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')) + ' ORDER BY sc.datetime', function(err, result, fields) {
       console.log(result)
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no matching classes"}');
@@ -234,7 +234,7 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/getClass/:cid', function(req, res){
+  app.get('/api/:classId/class/', function(req, res){
     try {
       check(req.params.cid).isNumeric() 
     } catch (e) {
@@ -242,7 +242,7 @@ module.exports = function(app) {
       return;
     }
     //console.log('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid);
-    rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + req.params.cid, function(err, result, fields) {
+    rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor,c.desc,g.address,g.city,g.state,g.zipcode,g.phone FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid WHERE c.id = ' + rmysql.escape(req.params.classId), function(err, result, fields) {
      if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no matching class"}');
       } else {
@@ -252,14 +252,14 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/getClassTimes/:cid', function(req, res){
+  app.get('/api/:classId/classTimes/', function(req, res){
     try {
       check(req.params.cid).isNumeric() 
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    rmysql.query('SELECT weekday,GROUP_CONCAT(time) AS time FROM classTimes WHERE classid = ' + req.params.cid + ' GROUP BY weekday ORDER BY FIELD(weekday,"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");', function(err, result, fields) {
+    rmysql.query('SELECT weekday,GROUP_CONCAT(time) AS time FROM classTimes WHERE classid = ' + rmysql.escape(req.params.classId) + ' GROUP BY weekday ORDER BY FIELD(weekday,"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");', function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no matching class"}');
       } else {
@@ -321,6 +321,7 @@ module.exports = function(app) {
       }
     });
   });  
+
 
   app.put('/api/cancelClass/', function(req, res) {
     rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
@@ -386,7 +387,7 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/getUserSCID/', function(req, res){
+  app.get('/api/userSCID/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -403,18 +404,18 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/getSCIDs/', function(req, res){
+  app.get('/api/SCIDs/:start/:end', function(req, res){
     try {
       check(req.header('token')).notNull();
-      //check(req.body.classid).isNumeric();
-      //check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
-      //check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+      //check(req.params.classid).isNumeric();
+      //check(req.params.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+      //check(req.params.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    console.log('SELECT sc.id AS sid,sc.classid as cid,sc.datetime,sc.price,sc.spots,sc.active FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime < ' + rmysql.escape(req.body.end) + ' AND gu.token = ' + rmysql.escape(req.header('token')))
-    rmysql.query('SELECT sc.id AS sid,sc.classid as cid,sc.datetime,sc.price,sc.spots,sc.active FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime < ' + rmysql.escape(req.body.end) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+    console.log('SELECT sc.id AS sid,sc.classid as cid,sc.datetime,sc.price,sc.spots,sc.active FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.params.start) + ' AND sc.datetime < ' + rmysql.escape(req.params.end) + ' AND gu.token = ' + rmysql.escape(req.header('token')))
+    rmysql.query('SELECT sc.id AS sid,sc.classid as cid,sc.datetime,sc.price,sc.spots,sc.active FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.params.start) + ' AND sc.datetime < ' + rmysql.escape(req.params.end) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
       if(err || result.length < 1) {
         res.send(result);
         //res.end('{"status": "failed", "message": "unable to retreive"}');
@@ -425,17 +426,17 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/getSCID/', function(req, res){
+  app.get('/api/:classId/SCID/:start', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.body.classid).isNumeric();
-      //check(req.body.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
-      //check(req.body.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+      check(req.params.classId).isNumeric();
+      //check(req.params.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
+      //check(req.params.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    rmysql.query('SELECT sc.id FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+    rmysql.query('SELECT sc.id FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE classid = ' + rmysql.escape(req.params.classId) + ' AND datetime = ' + rmysql.escape(req.params.datetime) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "unable to retreive"}');
       } else {
