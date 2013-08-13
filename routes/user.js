@@ -139,7 +139,7 @@ module.exports = function(app) {
       });
     });
 
-    app.post('/api/updateUserPreferences/', function(req, res){
+    app.put('/api/updateUserPreferences/', function(req, res){
       try {
         check(req.header('ltype')).isAlphanumeric();
         check(req.header('token')).notNull();
@@ -158,7 +158,7 @@ module.exports = function(app) {
       });
     });
 
-    app.post('/api/setPinCode/', function(req, res) {
+    app.put('/api/setPinCode/', function(req, res) {
       try {
         check(req.header('ltype')).isAlphanumeric();
         check(req.header('token')).notNull();
@@ -220,7 +220,7 @@ module.exports = function(app) {
     });
 
 
-    app.post('/api/updatePayment/', function(req, res){
+    app.put('/api/updatePayment/', function(req, res){
       try {
         check(req.header('ltype')).isAlphanumeric();
         check(req.header('token')).notNull();

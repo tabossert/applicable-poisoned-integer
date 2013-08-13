@@ -269,7 +269,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/updateClass/', function(req, res){
+  app.put('/api/updateClass/', function(req, res){
     try {
       check(req.header('token')).notNull();
       //check(req.body.price).len(1,7).isNumeric();
@@ -322,7 +322,7 @@ module.exports = function(app) {
     });
   });  
 
-  app.post('/api/cancelClass/', function(req, res) {
+  app.put('/api/cancelClass/', function(req, res) {
     rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
       if(result.length < 1) {
         wmysql.query('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',0,c.price,c.gymid,c.spots FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
@@ -345,7 +345,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/changeClass/', function(req, res) {
+  app.put('/api/changeClass/', function(req, res) {
     rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
       if(result.length < 1) {
         wmysql.query('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',0,' + req.body.price + ',c.gymid,' + req.body.spots + ' FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
@@ -368,7 +368,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/reviveClass/', function(req, res) {
+  app.put('/api/reviveClass/', function(req, res) {
     rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "unable to revive class"}');

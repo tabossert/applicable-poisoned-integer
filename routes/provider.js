@@ -155,8 +155,6 @@ module.exports = function(app) {
     try {
       check(req.header('token')).notNull();
       check(req.body.gid).isNumeric();
-      //check(req.body.phone).len(10,10).isNumeric()
-      //check(req.body.email).isEmail()
       check(req.body.zipcode).len(5,5).isNumeric()  
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
@@ -172,10 +170,6 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.end('{"status": "failed", "message": "unable to update hours"}');
           } else {
-          /*wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu set d.paymenttype = ' + wmysql.escape(req.body.paymenttype) + ',d.paylimit = ' + wmysql.escape(req.body.limit) + ',d.type = ' + wmysql.escape(req.body.type) + ' WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-              if(err || result.length < 1) {
-                res.end('{"status": "failed", "message": "unable to update disbursement"}');
-              } else {*/
             geo.geocoder(geo.google, req.body.address + ',' + req.body.city + ',' + req.body.state, false,  function(fAddress,lng,lat) {
               cordinatesModel.findOne({gymid: req.body.gid}, function(err, p) {
                 if(!p) {
@@ -199,8 +193,6 @@ module.exports = function(app) {
                 });
               });
             } 
-            /*});
-          }*/
         });
       } 
     });
@@ -228,7 +220,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/updateGymEmployee/', function(req, res) {
+  app.put('/api/updateGymUser/', function(req, res) {
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -320,7 +312,7 @@ module.exports = function(app) {
 
 
 
-  app.post('/api/updateDisbursement/', function(req, res){
+  app.put('/api/updateDisbursement/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.body.paymenttype).isNumeric()

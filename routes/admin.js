@@ -21,7 +21,7 @@ module.exports = function(app) {
   
   //ADMIN Section of calls
 
-  app.post('/api/aLogin/', function(req, res) {
+  app.put('/api/aLogin/', function(req, res) {
      rmysql.query('SELECT au.userid FROM users u INNER JOIN adminUsers au ON u.id = au.userid WHERE u.email = AES_ENCRYPT("' + req.body.username + '","' + salt + '") AND au.password = ' + rmysql.escape(req.body.password), function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message":"Invalid username/password"}',401);
@@ -111,7 +111,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/updateEmployee/:guid', function(req, res){
+  app.put('/api/updateEmployee/:guid', function(req, res){
     console.log(req.header('token'));
     try {
       check(req.header('token')).notNull();

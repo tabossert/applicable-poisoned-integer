@@ -101,7 +101,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/deleteEvent/', function(req, res){  
+  app.del('/api/deleteEvent/', function(req, res){  
     try {
       check(req.header('ltype')).isAlphanumeric();
       check(req.header('token')).notNull();

@@ -48,7 +48,7 @@ module.exports = function(app) {
 	});
 
 
-	app.post('/api/updateCustomerToken/', function(req, res) {
+	app.put('/api/updateCustomerToken/', function(req, res) {
 	  try {
 	    check(req.header('ltype')).isAlphanumeric();
 	    check(req.header('token')).notNull();
@@ -152,7 +152,7 @@ module.exports = function(app) {
 	};
 
 
-	app.post('/api/getTransactions/', function(req, res) {
+	app.post('/api/getTransactions/:offset', function(req, res) {
 	  try {
 	    check(req.header('ltype')).isAlphanumeric();
 	    check(req.header('token')).notNull();
@@ -161,7 +161,7 @@ module.exports = function(app) {
 	    res.end('{"status": "failed", "message":"' + e.message + '"}');
 	    return;
 	  }
-	  rmysql.query('SELECT refid FROM transactions t INNER JOIN users u WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' ORDER BY timestamp DESC LIMIT 5 OFFSET ' + req.body.offset, function(err, result, fields) {
+	  rmysql.query('SELECT refid FROM transactions t INNER JOIN users u WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' ORDER BY timestamp DESC LIMIT 5 OFFSET ' + rmysql.escape(req.params.offset), function(err, result, fields) {
 	    if(err || result.length < 1) {
 	      res.end('{"status": "failed", "message": "unable to retreive"}');
 	    } else {

@@ -40,7 +40,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/deleteCheckinByGym/', function(req, res) {
+  app.del('/api/deleteCheckinByGym/', function(req, res) {
      try {
       check(req.header('token')).notNull();
       check(req.body.userid).isNumeric();
