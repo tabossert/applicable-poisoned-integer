@@ -157,14 +157,14 @@ module.exports = function(app) {
 
 
 
-  app.get('/api/getUpcomingClasses/:cid', function(req, res) {
+  app.get('/api/:classId/upcomingClasses/', function(req, res) {
     try {
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    console.log('SELECT sc.id as scid,sc.datetime,(SELECT sc.spots - COUNT(s.sclassid) AS openSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE sc.id = scid) AS openCount FROM scheduledClass sc INNER JOIN classes c ON sc.classid = c.id WHERE c.id = ' + rmysql.escape(req.params.cid) + ' AND sc.datetime >= "' + moment().utc().format('YYYY-MM-DD HH:mm:ss') + '"')
-    rmysql.query('SELECT sc.id as scid,sc.datetime,(SELECT sc.spots - COUNT(s.sclassid) AS openSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE sc.id = scid) AS openCount FROM scheduledClass sc INNER JOIN classes c ON sc.classid = c.id WHERE c.id = ' + rmysql.escape(req.params.cid) + ' AND sc.datetime >= "' + moment().utc().format('YYYY-MM-DD HH:mm:ss') + '"', function(err, result, fields) {
+    console.log('SELECT sc.id as scid,sc.datetime,(SELECT sc.spots - COUNT(s.sclassid) AS openSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE sc.id = scid) AS openCount FROM scheduledClass sc INNER JOIN classes c ON sc.classid = c.id WHERE c.id = ' + rmysql.escape(req.params.classId) + ' AND sc.datetime >= "' + moment().utc().format('YYYY-MM-DD HH:mm:ss') + '"')
+    rmysql.query('SELECT sc.id as scid,sc.datetime,(SELECT sc.spots - COUNT(s.sclassid) AS openSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE sc.id = scid) AS openCount FROM scheduledClass sc INNER JOIN classes c ON sc.classid = c.id WHERE c.id = ' + rmysql.escape(req.params.classId) + ' AND sc.datetime >= "' + moment().utc().format('YYYY-MM-DD HH:mm:ss') + '"', function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no matching class"}');
       } else {
@@ -175,7 +175,7 @@ module.exports = function(app) {
 
 
 
-  app.post('/api/getClassParticipants/', function(req, res) {
+  app.get('/api/:classId/participants/', function(req, res) {
     try {
       check(req.body.classid).isNumeric();
       check(req.header('token')).notNull();
@@ -183,8 +183,8 @@ module.exports = function(app) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    console.log('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.sclassid = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')));
-    rmysql.query('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.sclassid = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+    console.log('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.sclassid = ' + rmysql.escape(req.params.classId) + ' AND gu.token = ' + rmysql.escape(req.header('token')));
+    rmysql.query('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid INNER JOIN gymUsers gu ON s.gymid = gu.gymid WHERE s.sclassid = ' + rmysql.escape(req.params.classId) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no results"}');
       } else {
