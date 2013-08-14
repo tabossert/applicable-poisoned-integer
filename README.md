@@ -37,8 +37,8 @@ gpgcheck=1
 - ./configure
 - make
 - make install
-- mv /root/sources/node-v0.10.1/out/Release /opt/node-v0.10.1
-- ln -s /opt/node-v0.10.1/node /usr/bin/node
+- mv /root/sources/node-v0.10.15/out/Release /opt/node-v0.10.15
+- ln -s /opt/node-v0.10.15/node /usr/bin/node
 
 ## API setup ##
 - mkdir /var/node/
