@@ -69,9 +69,9 @@ var stripe = require('stripe')(stripeKey);
 
 // SSL Certificate values
 var options = {
-  key: fs.readFileSync('ssl/api.fitstew.com-key.pem'),
-  ca: fs.readFileSync('ssl/gd_bundle.crt'),
-  cert: fs.readFileSync('ssl/api.fitstew.com.crt'),
+  key: fs.readFileSync('ssl/api.fitstew.com/api.fitstew.com-key.pem'),
+  ca: fs.readFileSync('ssl/api.fitstew.com/gd_bundle.crt'),
+  cert: fs.readFileSync('ssl/api.fitstew.com/api.fitstew.com.crt'),
   requestCert: true
 }
 
