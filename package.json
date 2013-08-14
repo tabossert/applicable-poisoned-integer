@@ -23,6 +23,7 @@
     "express-winston": "*", 
     "cloudfiles": "*",
     "stripe": "*",
-    "config": "*"
+    "config": "*",
+    "js-yaml": "*"
   }
 }
