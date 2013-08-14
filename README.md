@@ -23,8 +23,8 @@ gpgcheck=1
 - GRANT ALL ON fitstew.* TO 'barbell'@'localhost' IDENTIFIED BY '<password>';
 - FLUSH PRIVILEGES;
 - exit
-- mysql -u root fitstew < fitstew_2013-07-26.sql
-- mysql -u root barbell < barbell_2013-07-26.sql
+- mysql -u root fitstew < fitstew_2013-07-26.sql      (File is in sql/backups/ in the code base)
+- mysql -u root barbell < barbell_2013-07-26.sql      (File is in sql/backups/ in the code base)
 
 ## Node Setup ##
 - yum groupinstall 'Development Tools'
