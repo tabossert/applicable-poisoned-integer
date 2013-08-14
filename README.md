@@ -14,6 +14,7 @@ baseurl = http://yum.mariadb.org/5.5/centos5-x86
 gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB   
 gpgcheck=1 
 
+- rpm -e --nodeps mysql-libs
 - yum install MariaDB-server MariaDB-client
 - /etc/init.d/mysql start
 - mysql 
