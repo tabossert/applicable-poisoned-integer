@@ -8,11 +8,11 @@ Installation steps on CentOS 6.x  (use sudo or login as root)
 MySQL (MariaDB)
 - /etc/yum.repos.d/MariaDB.repo  -  add the following to this file and save
 
-`[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/5.5/centos5-x86
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1`
+`[mariadb]   
+name = MariaDB   
+baseurl = http://yum.mariadb.org/5.5/centos5-x86   
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB   
+gpgcheck=1`   
 
 - yum install MariaDB-server MariaDB-client
 - /etc/init.d/mysql start
