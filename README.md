@@ -1,12 +1,12 @@
 applicable-poisoned-integer
 ===========================
 
-Node.js API for FitStew
+# Node.js API for FitStew #
 
 Installation steps on CentOS 6.x  (use sudo or login as root)
 
-MySQL (MariaDB)
-- /etc/yum.repos.d/MariaDB.repo  -  add the following to this file and save
+## MySQL (MariaDB) ##
+- vim /etc/yum.repos.d/MariaDB.repo  -  add the following to this file and save
 
 [mariadb]   
 name = MariaDB   
@@ -26,7 +26,7 @@ gpgcheck=1
 - mysql -u root fitstew < fitstew_2013-07-26.sql
 - mysql -u root barbell < barbell_2013-07-26.sql
 
-Node Setup
+## Node Setup ##
 - yum groupinstall 'Development Tools'
 - mkdir ~/sources
 - cd ~/sources
@@ -39,7 +39,7 @@ Node Setup
 - mv /root/sources/node-v0.10.1/out/Release /opt/node-v0.10.1
 - ln -s /opt/node-v0.10.1/node /usr/bin/node
 
-API setup
+## API setup ##
 - mkdir /var/node/
 - cd /var/node
 - git clone https://github.com/tbossert/applicable-poisoned-integer .
