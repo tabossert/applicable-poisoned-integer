@@ -15,9 +15,9 @@ baseurl = http://yum.mariadb.org/5.5/centos5-x86
 gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
 gpgcheck=1
 
--- yum install MariaDB-server MariaDB-client
--- /etc/init.d/mysql start
--- mysql 
+[]-- yum install MariaDB-server MariaDB-client
+[]-- /etc/init.d/mysql start
+[]-- mysql 
 -- CREATE DATABASE fitstew;
 -- CREATE DATABASE barbell;
 -- GRANT ALL ON fitstew.* TO 'fitstewAPI'@'localhost' IDENTIFIED BY '<password>';
