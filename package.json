@@ -22,6 +22,7 @@
     "domain": "*",
     "express-winston": "*", 
     "cloudfiles": "*",
-    "stripe": "*"
+    "stripe": "*",
+    "config": "*"
   }
 }
