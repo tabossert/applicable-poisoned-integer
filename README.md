@@ -6,8 +6,8 @@ Node.js API for FitStew
 Installation steps on CentOS 6.x  (use sudo or login as root)
 
 - MySQL (MariaDB)
--- /etc/yum.repos.d/MariaDB.repo
---- add the following to this file and save
+[]-- /etc/yum.repos.d/MariaDB.repo
+[]--- add the following to this file and save
 
 [mariadb]
 name = MariaDB
