@@ -26,6 +26,9 @@ ADatabase:
 Mongo:
   HOST: mongodb://zunefit:zunefit@flame.mongohq.com:27041/zuneGeo
 
+Memcached:
+  host: 127.0.0.1:11211
+
 CloudFiles:
   username: tbossert
   apiKey: 32f0b1d0ec09dce0214e2788234c8a67
