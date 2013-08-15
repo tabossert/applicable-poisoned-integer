@@ -41,8 +41,8 @@ gpgcheck=1
 - ln -s /opt/node-v0.10.15/node /usr/bin/node
 
 ## Memcached Setup ##
-yum -y install memcached
-/etc/init.d/memcached start
+- yum -y install memcached
+- /etc/init.d/memcached start
 
 
 ## API setup ##
