@@ -17,6 +17,7 @@ gpgcheck=1
 - rpm -e --nodeps mysql-libs
 - yum -y install MariaDB-server MariaDB-client
 - /etc/init.d/mysql start
+- chkconfig --levels 235 mysql on
 - mysql 
 - CREATE DATABASE fitstew;
 - CREATE DATABASE barbell;
@@ -43,6 +44,7 @@ gpgcheck=1
 ## Memcached Setup ##
 - yum -y install memcached
 - /etc/init.d/memcached start
+- chkconfig --levels 235 memcached on
 
 
 ## API setup ##
