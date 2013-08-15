@@ -24,6 +24,7 @@
     "cloudfiles": "*",
     "stripe": "*",
     "config": "*",
-    "js-yaml": "*"
+    "js-yaml": "*",
+    "memcached": "*"
   }
 }
