@@ -15,7 +15,7 @@ gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
 gpgcheck=1 
 
 - rpm -e --nodeps mysql-libs
-- yum install MariaDB-server MariaDB-client
+- yum -y install MariaDB-server MariaDB-client
 - /etc/init.d/mysql start
 - mysql 
 - CREATE DATABASE fitstew;
@@ -28,7 +28,7 @@ gpgcheck=1
 - mysql -u root barbell < barbell_2013-07-26.sql      (File is in sql/backups/ in the code base)
 
 ## Node Setup ##
-- yum groupinstall 'Development Tools'
+- yum -y groupinstall 'Development Tools'
 - mkdir ~/sources
 - cd ~/sources
 - wget http://nodejs.org/dist/node-latest.tar.gz
@@ -39,6 +39,11 @@ gpgcheck=1
 - make install
 - mv /root/sources/node-v0.10.15/out/Release /opt/node-v0.10.15
 - ln -s /opt/node-v0.10.15/node /usr/bin/node
+
+## Memcached Setup ##
+yum -y install memcached
+/etc/init.d/memcached start
+
 
 ## API setup ##
 - mkdir /var/node/
