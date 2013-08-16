@@ -21,8 +21,8 @@ gpgcheck=1
 - mysql 
 - CREATE DATABASE fitstew;
 - CREATE DATABASE barbell;
-- GRANT ALL ON fitstew.* TO 'fitstewAPI'@'localhost' IDENTIFIED BY '<password>';
-- GRANT ALL ON fitstew.* TO 'barbell'@'localhost' IDENTIFIED BY '<password>';
+- GRANT ALL ON fitstew.* TO 'fitstewAPI'@'localhost' IDENTIFIED BY '<password>';   Get password from config/development.js
+- GRANT ALL ON fitstew.* TO 'barbell'@'localhost' IDENTIFIED BY '<password>';   Get password from config/development.js
 - FLUSH PRIVILEGES;
 - exit
 - mysql -u root fitstew < fitstew_2013-07-26.sql      (File is in sql/backups/ in the code base)
