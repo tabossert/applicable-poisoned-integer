@@ -2,6 +2,10 @@
  *  Routes related to classes
  */
 
+
+////////////// Create memcached of classes and refresh on schedule events or class change/////////////
+
+
 var config = config = require('config')
   , moment = require('moment')
   , check = require('validator').check
