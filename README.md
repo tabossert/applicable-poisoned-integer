@@ -1,3 +1,5 @@
+[ ![Codeship Status for tbossert/applicable-poisoned-integer](https://www.codeship.io/projects/e4d4acd0-e8e0-0130-582e-265f8c3da2d2/status?branch=master)](https://www.codeship.io/projects/5976)
+
 applicable-poisoned-integer
 ===========================
 
