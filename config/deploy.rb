@@ -22,10 +22,10 @@ task :development do
   set :branch, 'master'                                     #default
   set :user, 'applicable'
 
-  set :deploy_to, , "/var/node/#{application}"   #capper defaults to "/var/app/#{application}"
+  set :deploy_to, "/var/node/#{application}"   #capper defaults to "/var/app/#{application}"
   set :node_env, 'development'
   server 'dev.fitstew.com', :app                        #add more / different roles
-  set :forever_cmd, "./node_modules/.bin/forever"           #use the forever that is installed along with the app
+  set :forever_cmd, "./node_modules/forever/bin/forever"           #use the forever that is installed along with the app
 end
 
 #desc "tail the application logfile"
