@@ -56,6 +56,12 @@ module.exports = function(app) {
 
 
   app.get('/api/classesByPartner/:start/:end', function(req, res) {
+    try {
+      check(req.header('token')).notNull();
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
@@ -101,6 +107,13 @@ module.exports = function(app) {
 
 
   app.get('/api/classSize/:classId/:datetime', function(req, res){
+    try {
+      check(req.header('token')).notNull();
+      check(req.params.classId).isNumeric()
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
     rmysql.query('SELECT sc.spots - COUNT(s.sclassid) AS openSpots,sc.spots AS maxSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE s.sclassid = ' + rmysql.escape(req.params.classId) + ' AND s.datetime = "' + rmysql.escape(req.params.datetime) + '"', function(err, result, fields) {
       if(err || result.length < 1) {
         res.send(400,'{"status": "failed", "message": "no class matching id"}');
@@ -186,6 +199,7 @@ module.exports = function(app) {
 
   app.get('/api/:classId/upcomingClasses/', function(req, res) {
     try {
+      check(req.params.classId).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -203,8 +217,8 @@ module.exports = function(app) {
 
   app.get('/api/:classId/participants/', function(req, res) {
     try {
-      check(req.params.classid).isNumeric();
       check(req.header('token')).notNull();
+      check(req.params.classId).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -222,6 +236,9 @@ module.exports = function(app) {
   app.post('/api/addClass/', function(req, res){
     try {
       check(req.header('token')).notNull();
+      check(req.body.price).len(1,5).isDecimal();
+      check(req.body.spots).isNumeric();
+      check(req.body.duration).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -265,7 +282,7 @@ module.exports = function(app) {
 
   app.get('/api/:classId/class/', function(req, res){
     try {
-      check(req.params.cid).isNumeric() 
+      check(req.params.classId).isNumeric() 
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -282,7 +299,7 @@ module.exports = function(app) {
 
   app.get('/api/:classId/classTimes/', function(req, res){
     try {
-      check(req.params.cid).isNumeric() 
+      check(req.params.classId).isNumeric() 
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -296,12 +313,13 @@ module.exports = function(app) {
     });
   });
 
-  //REVISIT THIS ONE
+
   app.put('/api/updateClass/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      //check(req.body.price).len(1,7).isNumeric();
+      check(req.body.price).len(1,5).isDecimal();
       check(req.body.classid).isNumeric();
+      check(req.body.duration).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -338,10 +356,10 @@ module.exports = function(app) {
   });
 
 
-  app.del('/api/deleteClass/:cid', function(req, res){  
+  app.del('/api/:classId/deleteClass/', function(req, res){  
     try {
       check(req.header('token')).notNull();
-      check(req.params.cid).isNumeric()
+      check(req.params.classId).isNumeric()
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -350,7 +368,7 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-        wmysql.query('DELETE c FROM classes c WHERE c.id = ' + req.params.cid + ' AND c.gymid = ' + data.gymid, function(err, result, fields) {
+        wmysql.query('DELETE c FROM classes c WHERE c.id = ' + req.params.classId + ' AND c.gymid = ' + data.gymid, function(err, result, fields) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "delete class from classes table failed"}');
           } else {
@@ -361,21 +379,22 @@ module.exports = function(app) {
     });
   });  
 
-  //REVISIT THIS ONE
-  app.put('/api/cancelClass/', function(req, res) {
+
+  app.post('/api/cancelClass/', function(req, res) {
+    try {
+      check(req.header('token')).notNull();
+      check(req.body.classid).isNumeric()
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
         rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
           if(result.length < 1) {
-            wmysql.query('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',0,c.price,c.gymid,c.spots FROM classes c INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE c.id = ' + req.body.classid + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-              if(err) {
-                res.send(400,'{"status": "failed", "message": "update to scheduledClass table failed"}');
-              } else {
-                res.send('{"status": "success"}');
-              }
-            });
+            res.send(400,'{"status": "failed", "message": "no scheduledClass matching the classid and datetime"}');
           } else {
             wmysql.query('UPDATE scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid SET active = 0 WHERE sc.classid = ' + req.body.classid + ' AND sc.datetime = ' + wmysql.escape(req.body.datetime) + ' AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
               if(err) {
@@ -394,8 +413,9 @@ module.exports = function(app) {
   app.put('/api/changeClass/', function(req, res) {
     try {
       check(req.header('token')).notNull();
-      check(req.params.classid).isNumeric();
-      check(req.params.spots).isNumeric();
+      check(req.body.classid).isNumeric();
+      check(req.body.price).len(1,5).isDecimal();
+      check(req.body.spots).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -404,31 +424,26 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-        rmysql.query('SELECT id,active FROM scheduledClass WHERE classid = ' + req.body.classid + ' AND datetime = ' + rmysql.escape(req.body.datetime), function(err, result, fields) {
-          if(result.length < 1) {
-            wmysql.query('INSERT INTO scheduledClass (classid,datetime,active,price,gymid,spots) SELECT ' + req.body.classid + ',' + wmysql.escape(req.body.datetime) + ',0,' + req.body.price + ',c.gymid,' + req.body.spots + ' FROM classes c WHERE c.id = ' + req.body.classid + ' AND c.gymid = ' + data.gymid, function(err, result, fields) {
-              if(err) {
-                res.send(400,'{"status": "failed", "message": "unable to cancel"}');
-              } else {
-                res.send('{"status": "success"}');
-              }
-            });
+        wmysql.query('UPDATE scheduledClass sc SET datetime = ' + wmysql.escape(req.body.datetime) + ',spots = ' + req.body.spots + ',price = ' + req.body.price + ' WHERE sc.classid = ' + req.body.classid + ' AND sc.datetime = ' + wmysql.escape(req.body.datetime) + ' AND sc.gymid = ' + data.gymid, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "unable to change class"}');
           } else {
-            wmysql.query('UPDATE scheduledClass sc SET datetime = ' + req.body.datetime + ',spots = ' + req.body.spots + ',price = ' + req.body.price + ' WHERE sc.classid = ' + req.body.classid + ' AND sc.datetime = ' + wmysql.escape(req.body.datetime) + ' AND sc.gymid = ' + data.gymid, function(err, result, fields) {
-              if(err || result.affectedRows < 1) {
-                res.send(400,'{"status": "failed", "message": "unable to change class"}');
-              } else {
-                res.send('{"status": "success"}');
-              }
-            }); 
+            res.send('{"status": "success"}');
           }
-        });
+        }); 
       }
     });
   });
 
 
   app.put('/api/reviveClass/', function(req, res) {
+    try {
+      check(req.header('token')).notNull();
+      check(req.body.classid).isNumeric()
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
