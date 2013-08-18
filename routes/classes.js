@@ -110,16 +110,30 @@ module.exports = function(app) {
 
 
 
-  app.post('/api/nextClasses/:start/:end', function(req, res) {
+  app.get('/api/nextClasses/', function(req, res) {
     try {
       check(req.header('token')).notNull();
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    console.log('SELECT sc.id,sc.classid,sc.service,sc.active,sc.price,sc.spots,sc.datetime FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.params.start) + ' AND sc.datetime <= ' + rmysql.escape(req.params.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')) + ' ORDER BY sc.datetime')
-    rmysql.query('SELECT sc.id,sc.classid,sc.service,sc.active,sc.price,sc.spots,sc.datetime FROM scheduledClass sc INNER JOIN gymUsers gu ON sc.gymid = gu.gymid WHERE sc.datetime >= ' + rmysql.escape(req.params.start) + ' AND sc.datetime <= ' + rmysql.escape(req.params.end) + ' AND  gu.token = ' + rmysql.escape(req.header('token')) + ' ORDER BY sc.datetime', function(err, result, fields) {
-      console.log(result)
+    
+    var start = req.params.start
+      , end = req.params.end;
+    
+    var statement = 'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime '
+        + ' FROM scheduledClass sc'
+        + ' INNER JOIN gymUsers gu ON sc.gymid = gu.gymid'
+        + ' WHERE gu.token = ' + rmysql.escape(req.header('token'))
+        + ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
+        + ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
+        + ' ORDER BY sc.datetime';
+     
+    console.log(statement);
+    
+    rmysql.query(statement, function(err, result, fields) {
+      console.log('res', result)
+      console.log('err', err);
       if(err || result.length < 1) {
         res.end('{"status": "failed", "message": "no matching classes"}');
       } else {
@@ -177,7 +191,7 @@ module.exports = function(app) {
 
   app.get('/api/:classId/participants/', function(req, res) {
     try {
-      check(req.body.classid).isNumeric();
+      check(req.params.classId).isNumeric();
       check(req.header('token')).notNull();
     } catch (e) {
       res.end('{"status": "failed", "message":"' + e.message + '"}');
