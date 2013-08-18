@@ -288,6 +288,8 @@ module.exports = function(app) {
         return res.send(401,'{"status": "failed", "message": "invalid token"}');
       }
     
+      var participantId = wmysql.escape(req.params.participantId);
+
       var statement = [
           'UPDATE schedule s INNER JOIN gymUsers gu ON s.gymid = gu.gymid '
         , 'SET s.checkin = 1 XOR s.checkin, s.chkintime = NOW() '
@@ -296,7 +298,7 @@ module.exports = function(app) {
       
       rmysql.query(statement, function(err, result) {
         if(err) {
-          res.send(400,'{"status": "failed", "message": "no class matched id"}');
+          res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
         } else {
           res.send(result);
         }
