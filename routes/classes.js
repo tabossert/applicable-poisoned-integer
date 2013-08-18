@@ -222,12 +222,29 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    rmysql.query('SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name FROM users u INNER JOIN schedule s ON u.id = s.userid WHERE s.sclassid = ' + rmysql.escape(req.params.classId) + ' AND s.gymid = ' + data.gymid, function(err, result, fields) {
-      if(err || result.length < 1) {
-        res.send(400,'{"status": "failed", "message": "no class matched id or no participants found"}');
-      } else {
-        res.send(result);
+    
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+
+      if(err) {
+        return res.send(401,'{"status": "failed", "message": "invalid token"}');
       }
+      
+      var s = [
+          'SELECT u.id,s.id AS sid,s.checkin,u.first_name,u.last_name'
+        , 'FROM users u'
+        , 'INNER JOIN schedule s'
+        , 'ON u.id = s.userid'
+        , 'WHERE s.sclassid = ' + rmysql.escape(req.params.classId)
+        , 'AND s.gymid = ' + data.gymid
+        ].join(" ");
+      
+      rmysql.query(s, function(err, result) {
+        if(err) {
+          res.send(400,'{"status": "failed", "message": "no class matched id"}');
+        } else {
+          res.send(result);
+        }
+      });
     });
   });
 
