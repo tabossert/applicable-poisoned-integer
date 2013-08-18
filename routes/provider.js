@@ -80,7 +80,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(401,'{"status": "failed", "message": "invalid token"}'); 
           } else {
-            memcached.remMemAuth(req.header('token'));
+            memcached.remMemKey(req.header('token'));
             res.send('{"status": "success"}');
           }
         });
@@ -110,7 +110,7 @@ module.exports = function(app) {
                 if(err) {
                   res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
                 } else {
-                  wmysql.query('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid SET g.image = ' + wmysql.escape(CFcontainer + req.body.iName) + ' WHERE gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+                  wmysql.query('UPDATE gyms g SET g.image = ' + wmysql.escape(CFcontainer + req.body.iName) + ' WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid, function(err, result, fields) {
                     if(err || result.affectedRows < 1) {
                       res.send(400,'{"status": "failed", "message": "row update failed"}',400); 
                     } else {
@@ -140,11 +140,11 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-        wmysql.query('UPDATE gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid set g.name = ' + wmysql.escape(req.body.name) + ',g.address = ' + wmysql.escape(req.body.address) + ',g.city = ' + wmysql.escape(req.body.city) + ',g.state = ' + wmysql.escape(req.body.state) + ',g.zipcode = ' + req.body.zipcode + ',g.phone = ' + req.body.phone + ',g.email = ' + wmysql.escape(req.body.email) + ',g.contact = ' + wmysql.escape(req.body.contact) + ',g.facebook = ' + wmysql.escape(req.body.facebook) + ',g.twitter = ' + wmysql.escape(req.body.twitter) + ',g.googleplus = ' + wmysql.escape(req.body.googleplus) + ',g.url = ' + wmysql.escape(req.body.url) + ',g.complete = true WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+        wmysql.query('UPDATE gyms g set g.name = ' + wmysql.escape(req.body.name) + ',g.address = ' + wmysql.escape(req.body.address) + ',g.city = ' + wmysql.escape(req.body.city) + ',g.state = ' + wmysql.escape(req.body.state) + ',g.zipcode = ' + req.body.zipcode + ',g.phone = ' + req.body.phone + ',g.email = ' + wmysql.escape(req.body.email) + ',g.contact = ' + wmysql.escape(req.body.contact) + ',g.facebook = ' + wmysql.escape(req.body.facebook) + ',g.twitter = ' + wmysql.escape(req.body.twitter) + ',g.googleplus = ' + wmysql.escape(req.body.googleplus) + ',g.url = ' + wmysql.escape(req.body.url) + ',g.complete = true WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid, function(err, result, fields) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "update to row failed"}');
           } else {
-            wmysql.query('UPDATE hours h INNER JOIN gymUsers gu ON h.gymid = gu.gymid set mondayOpen = ' + wmysql.escape(req.body.mondayOpen) + ',mondayClose = ' + wmysql.escape(req.body.mondayClose) + ',tuesdayOpen = ' + wmysql.escape(req.body.tuesdayOpen) + ',tuesdayClose = ' + wmysql.escape(req.body.tuesdayClose) + ', wednesdayOpen = ' + wmysql.escape(req.body.wednesdayOpen) + ',wednesdayClose = ' + wmysql.escape(req.body.wednesdayClose) + ',thursdayOpen = ' + wmysql.escape(req.body.thursdayOpen) + ',thursdayClose = ' + wmysql.escape(req.body.thursdayClose) + ',fridayOpen = ' + wmysql.escape(req.body.fridayOpen) + ',fridayClose = ' + wmysql.escape(req.body.fridayClose) + ',saturdayOpen = ' + wmysql.escape(req.body.saturdayOpen) + ',saturdayClose = ' + wmysql.escape(req.body.saturdayClose) + ',sundayOpen = ' + wmysql.escape(req.body.sundayOpen) + ',sundayClose = ' + wmysql.escape(req.body.sundayClose) + ' WHERE gu.groupid = 1 AND gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+            wmysql.query('UPDATE hours h INNER JOIN gymUsers gu ON h.gymid = gu.gymid set mondayOpen = ' + wmysql.escape(req.body.mondayOpen) + ',mondayClose = ' + wmysql.escape(req.body.mondayClose) + ',tuesdayOpen = ' + wmysql.escape(req.body.tuesdayOpen) + ',tuesdayClose = ' + wmysql.escape(req.body.tuesdayClose) + ', wednesdayOpen = ' + wmysql.escape(req.body.wednesdayOpen) + ',wednesdayClose = ' + wmysql.escape(req.body.wednesdayClose) + ',thursdayOpen = ' + wmysql.escape(req.body.thursdayOpen) + ',thursdayClose = ' + wmysql.escape(req.body.thursdayClose) + ',fridayOpen = ' + wmysql.escape(req.body.fridayOpen) + ',fridayClose = ' + wmysql.escape(req.body.fridayClose) + ',saturdayOpen = ' + wmysql.escape(req.body.saturdayOpen) + ',saturdayClose = ' + wmysql.escape(req.body.saturdayClose) + ',sundayOpen = ' + wmysql.escape(req.body.sundayOpen) + ',sundayClose = ' + wmysql.escape(req.body.sundayClose) + ' WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid, function(err, result, fields) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
               } else {
@@ -194,7 +194,7 @@ module.exports = function(app) {
         require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
         });
-        wmysql.query('INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) SELECT id,"' + token + '",' + wmysql.escape(req.body.username) +  ',' + wmysql.escape(req.body.firstName) + ',' + wmysql.escape(req.body.lastName) + ',0,NOW() FROM gyms g INNER JOIN gymUsers gu ON g.id = gu.gymid WHERE gu.token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+        wmysql.query('INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) SELECT id,"' + token + '",' + wmysql.escape(req.body.username) +  ',' + wmysql.escape(req.body.firstName) + ',' + wmysql.escape(req.body.lastName) + ',0,NOW() FROM gyms g WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid, function(err, result, fields) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
           } else {
@@ -274,7 +274,7 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        rmysql.query('SELECT balance FROM gymBilling gb WHERE gb.gid = ' + data, function(err, result, fields) {
+        rmysql.query('SELECT balance FROM gymBilling gb WHERE gb.gid = ' + data.gymid, function(err, result, fields) {
           if(err || result.length < 1) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve balance"}');
           } else {
@@ -299,7 +299,7 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        rmysql.query('SELECT c.id,ct.weekday,ct.time,c.service,c.duration,c.spots from classes c INNER JOIN classTimes ct ON c.id = ct.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE gu.token = ' + rmysql.escape(req.header('token')) + ' ORDER BY FIELD(weekday,"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")', function(err, result, fields) {
+        rmysql.query('SELECT c.id,ct.weekday,ct.time,c.service,c.duration,c.spots from classes c INNER JOIN classTimes ct ON c.id = ct.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE g.id = ' + data.gymid + ' ORDER BY FIELD(weekday,"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")', function(err, result, fields) {
           if(err || result.length < 1) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve schedule"}');
           } else {
@@ -322,9 +322,9 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        rmysql.query('SELECT d.paymenttype,d.paylimit,d.type FROM disbursement d INNER JOIN gymUsers gu ON (d.gymid = gu.gymid) WHERE gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+        rmysql.query('SELECT d.paymenttype,d.paylimit,d.type FROM disbursement d WHERE d.gymid = ' + data.gymid, function(err, result, fields) {
           if (err || result.length < 1) {
-            res.send(400,'{"status": "failed", "message": "unable to retrieve disbursement or invalid token"}');
+            res.send(400,'{"status": "failed", "message": "unable to retrieve disbursement"}');
           } else {
             res.send(result);
           }
@@ -348,9 +348,9 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {    
-        wmysql.query('UPDATE disbursement d INNER JOIN gymUsers gu ON d.gymid = gu.gymid set d.paymenttype = ' + rmysql.escape(req.body.paymenttype) + ',d.paylimit = ' + rmysql.escape(req.body.paylimit) + ',d.type = ' + rmysql.escape(req.body.type) + ' WHERE gu.groupid = 1 AND gu.token = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
+        wmysql.query('UPDATE disbursement d set d.paymenttype = ' + rmysql.escape(req.body.paymenttype) + ',d.paylimit = ' + rmysql.escape(req.body.paylimit) + ',d.type = ' + rmysql.escape(req.body.type) + ' WHERE ' + data.groupid + ' = 1 AND gu.gymid = ' + data.gymid, function(err, result, fields) {
           if (err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "update to disbursement row failed or invalid token"}');
+            res.send(400,'{"status": "failed", "message": "update to disbursement row failed"}');
           } else {
             res.send('{"status": "success"}');
           }
@@ -423,7 +423,7 @@ module.exports = function(app) {
   app.get('/api/paymentMethods/', function(req, res){
     rmysql.query('SELECT id,type FROM paymentmethod', function(err, result, fields) {
       if (err || result.length < 1) {
-        res.end('{"status": "failed", "message": "unable to retreive"}');
+        res.end(400,'{"status": "failed", "message": "unable to retreive payment methods"}');
       } else {
         res.send(result);
       }

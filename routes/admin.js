@@ -86,6 +86,45 @@ module.exports = function(app) {
   });
 
 
+  app.post('/api/addGym/', function(req, res){
+    try {
+      check(req.body.username).len(1,12).isAlphanumeric()
+    } catch (e) {
+      res.end('{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+    require('crypto').randomBytes(48, function(ex, buf) {
+      var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+      wmysql.query('INSERT INTO gyms (name) VALUES(' + wmysql.escape(req.body.name) +')', function(err, result, fields) {
+       if(err || result.affectedRows < 1) {
+          res.end('{"status": "failed", "message": "unable to add gym"}');
+        } else {
+          var gymid = result.insertId;
+          wmysql.query('INSERT INTO gymUsers (gymid,username,password,first_name,last_name,groupid,token) VALUES(' + gymid +',"' + req.body.username + '",' + wmysql.escape(req.body.password) + ',' + wmysql.escape(req.body.firstName) + ',' + wmysql.escape(req.body.lastName) + ',1,"' + token + '")', function(err, result, fields) {
+            if(err || result.affectedRows < 1) {
+              res.end('{"status": "failed", "message": "unable to add gym user: "}',400);
+            } else {
+              wmysql.query('INSERT INTO classes (gymid,service,duration,price,datetime,status,daypass) VALUES(' + gymid + ',"Day Pass",0,0,NOW(),0,1)', function(err, result, fields) {
+                if(err || result.affectedRows < 1) {
+                  res.end('{"status": "failed", "message": "unable to add day pass class"}',400);
+                } else {
+                  wmysql.query('INSERT INTO disbursement (gymid,paymenttype,paylimit,type) SELECT id,1,300,1 FROM gyms WHERE token = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
+                    if (err || result.affectedRows < 1) {
+                      res.end('{"status": "failed", "message": "unable to update disbursement"}',400);
+                    } else {
+                      res.end('{"status": "success"}');
+                    }
+                  });
+                }
+              });  
+            }
+          }); 
+        }
+      });
+    });
+  });
+
+
   app.get('/api/getEmployees/:gid', function(req, res){
     console.log(req.header('token'));
     try {

@@ -1,3 +1,5 @@
+[ ![Codeship Status for tbossert/applicable-poisoned-integer](https://www.codeship.io/projects/e4d4acd0-e8e0-0130-582e-265f8c3da2d2/status?branch=master)](https://www.codeship.io/projects/5976)
+
 applicable-poisoned-integer
 ===========================
 
@@ -21,8 +23,8 @@ gpgcheck=1
 - mysql 
 - CREATE DATABASE fitstew;
 - CREATE DATABASE barbell;
-- GRANT ALL ON fitstew.* TO 'fitstewAPI'@'localhost' IDENTIFIED BY '<password>';
-- GRANT ALL ON fitstew.* TO 'barbell'@'localhost' IDENTIFIED BY '<password>';
+- GRANT ALL ON fitstew.* TO 'fitstewAPI'@'localhost' IDENTIFIED BY 'password';       (Get password from config/development.js)
+- GRANT ALL ON fitstew.* TO 'barbell'@'localhost' IDENTIFIED BY 'password';          (Get password from config/development.js)
 - FLUSH PRIVILEGES;
 - exit
 - mysql -u root fitstew < fitstew_2013-07-26.sql      (File is in sql/backups/ in the code base)
