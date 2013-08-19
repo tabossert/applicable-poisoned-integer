@@ -160,7 +160,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:pid/update/', function(req, res){
+  app.post('/api/provider/:pid/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.params.pid).isNumeric();
@@ -257,7 +257,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:pid/employee/add/', function(req, res){
+  app.post('/api/provider/:pid/employee/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.body.username).len(1,12).isAlphanumeric()
@@ -338,7 +338,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:pid/employee/:eid/delete/', function(req, res){
+  app.post('/api/provider/:pid/employee/:eid/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.body.eid).isNumeric();
@@ -377,7 +377,7 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/gymBalance/', function(req, res){
+  app.get('/api/provider/:pid/balance/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -431,7 +431,7 @@ module.exports = function(app) {
   });*/
 
   
-  app.get('/api/disbursement/', function(req, res){
+  app.get('/api/provider/:pid/disbursement/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -461,7 +461,7 @@ module.exports = function(app) {
 
 
 
-  app.put('/api/provider/:pid/disbursement/update/', function(req, res){
+  app.put('/api/provider/:pid/disbursement/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.body.paymenttype).isNumeric()
@@ -559,7 +559,7 @@ module.exports = function(app) {
   });*/  
 
 
-  app.get('/api/paymentMethods/', function(req, res){
+  /*app.get('/api/paymentMethods/', function(req, res){
     rmysql.query('SELECT id,type FROM paymentmethod', function(err, result, fields) {
       if (err || result.length < 1) {
         res.send(400,'{"status": "failed", "message": "unable to retreive payment methods"}');
@@ -567,5 +567,5 @@ module.exports = function(app) {
         res.send(result);
       }
     });
-  });  
+  });*/  
 }
