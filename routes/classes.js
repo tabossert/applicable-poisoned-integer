@@ -55,23 +55,6 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/scheduledClasses/:start/:end/', function(req, res) {
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        rmysql.query('SELECT sc.id AS scid,c.id AS cid,c.service,c.color,sc.active,sc.price,sc.spots,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  c.gymid = ' + data.gymid, function(err, result, fields) {
-         if(err || result.length < 1) {
-            res.send(400,'{"status": "failed", "message": "no class records matched gymid"}');
-          } else {
-            res.send(result);
-          }
-        });
-      }
-    });
-  });
-
-
   /*app.get('/api/partner/:gid/classes', function(req, res){
     try {
       check(req.params.gid).isNumeric();
@@ -111,7 +94,7 @@ module.exports = function(app) {
   });*/
 
 
-  app.get('/api/scheduledClasses/:start/:end/', function(req, res) {
+  app.get('/api/scheduledClasses/', function(req, res) {
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -124,13 +107,16 @@ module.exports = function(app) {
         return res.send(401,'{"status": "failed", "message": "invalid token"}');
       }
     
-      var start = rmysql.escape(req.params.start)
-        , end = rmysql.escape(req.params.end);
+      // Having mysql escape here turns the actual null into the string NULL,
+      // which ruins the check later on.
+      var start = req.params.start
+        , end = req.params.end;
       
       var statement = [
-            'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime '
+            'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime,c.service '
           , ' FROM scheduledClass sc'
           , ' INNER JOIN gymUsers gu ON sc.gymid = gu.gymid'
+          , ' INNER JOIN classes c ON sc.classid = c.id'
           , ' WHERE gu.token = ' + rmysql.escape(req.header('token'))
           , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
           , ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
@@ -148,7 +134,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/scheduledClasses/add/', function(req, res) {
+  app.post('/api/scheduledClasses/', function(req, res) {
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -160,24 +146,25 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-      var classObj = req.body.classObj;
-
-      var statement = [
-          'INSERT INTO scheduledClass '
-        , '(classid,datetime,active,price,gymid,spots,service,instructor,image,daypass) '
-        , 'SELECT ' + wmysql.escape(classObj[item].classId) + ',' + wmysql.escape(classObj[item].datetime) + ',1,price,gymid,spots,service,instructor,image,daypass '
-        , 'FROM classes WHERE id = ' + wmysql.escape(classObj[item].classId) + ' AND gymid = ' + data.gymid
-        ].join(" ");
-
-        for( var item in classObj) {
-          wmysql.query(statement, function(err, result, fields) {    
-            if(err) {
-              res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
-            } else {
-              res.send('{"status": "success"}');
-            }
-          });
-        }
+        var classObj = req.body;
+  
+        var statement = [
+            'INSERT INTO scheduledClass'
+          , '(classid,datetime,active,price,gymid,spots,service,instructor,image,daypass)'
+          , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,price,gymid,spots,service,instructor,image,daypass'
+          , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND gymid = ' + data.gymid
+          ].join(" ");
+  
+        
+        wmysql.query(statement, function(err, result, fields) {    
+          if(err) {
+            res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
+          } else {
+            // You should send the object back on create
+            classObj.id = result.insertId;
+            res.send( JSON.stringify(classObj) );
+          }
+        });
       }
     }); 
   });       
