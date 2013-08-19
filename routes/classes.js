@@ -30,7 +30,13 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-        rmysql.query('SELECT c.color FROM classes c WHERE c.gymid = ' + data.gymid + 'ORDER BY c.id DESC LIMIT 1', function(err, result, fields) {
+
+        var statement = [
+              'SELECT c.color FROM classes c '
+            , 'WHERE c.gymid = ' + data.gymid + 'ORDER BY c.id DESC LIMIT 1'
+        ].join(" ");
+
+        rmysql.query(statement, function(err, result, fields) {
           colorIndex = colorArr.indexOf(result[0].color) + 1;
           callback(colorArr[colorIndex]);
         });
@@ -43,9 +49,15 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-        rmysql.query('SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots FROM classes c WHERE c.gymid = ' + data.gymid + ' ORDER BY service', function(err, result, fields) {
-          if(err || result.length < 1) {
-            res.send(400,'{"status": "failed", "message": "no class records matched gymid"}');
+
+        var statement = [
+              'SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots '
+            , 'FROM classes c WHERE c.gymid = ' + data.gymid + ' ORDER BY service'
+        ].join(" ");
+
+        rmysql.query(statement, function(err, result, fields) {
+          if(err) {
+            res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
           } else {
             res.send(result);
           }
@@ -59,8 +71,20 @@ module.exports = function(app) {
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        rmysql.query('SELECT sc.id AS scid,c.id AS cid,c.service,c.color,sc.active,sc.price,sc.spots,sc.datetime FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid WHERE sc.datetime >= ' + rmysql.escape(req.body.start) + ' AND sc.datetime <= ' + rmysql.escape(req.body.end) + ' AND  c.gymid = ' + data.gymid, function(err, result, fields) {
+      } else {
+
+        var start = rmysql.escape(req.params.start)
+        , end = rmysql.escape(req.params.stop)
+
+        var statement = [
+              'SELECT sc.id AS scid,c.id AS cid,c.service,c.color,sc.active,sc.price,sc.spots,sc.datetime '
+            , 'FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid '
+            , 'WHERE c.gymid = ' + data.gymid
+            , ((start) ? ' AND sc.datetime >= ' + start : '')
+            , ((end) ? ' AND sc.datetime >= ' + end : '')
+        ].join(" ");
+
+        rmysql.query(statement, function(err, result, fields) {
          if(err || result.length < 1) {
             res.send(400,'{"status": "failed", "message": "no class records matched gymid"}');
           } else {
@@ -130,10 +154,9 @@ module.exports = function(app) {
       var statement = [
             'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime '
           , ' FROM scheduledClass sc'
-          , ' INNER JOIN gymUsers gu ON sc.gymid = gu.gymid'
-          , ' WHERE gu.token = ' + rmysql.escape(req.header('token'))
-          , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
-          , ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
+          , ' WHERE sc.gymid = ' + data.gymid
+          , ((start) ? ' AND sc.datetime >= ' + start : '')
+          , ((end) ? ' AND sc.datetime <= ' + end : '')
           , ' ORDER BY sc.datetime'
           ].join(" ");
     
@@ -174,7 +197,7 @@ module.exports = function(app) {
             if(err) {
               res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
             } else {
-              res.send('{"status": "success"}');
+              res.send(result);
             }
           });
         }
@@ -304,7 +327,7 @@ module.exports = function(app) {
                   });
                 });
               });
-              res.send('{"status": "success", "message": "' + classId + '"}');
+              res.send('{"classId": "' + classId + '"}');
             }
           });
         });
@@ -426,7 +449,7 @@ module.exports = function(app) {
                 });
               });
             });
-            res.send('{"status": "success", "message": "' + classId + '"}');
+            res.send('{"classId": "' + classId + '"}');
           }
         });
       }
@@ -457,7 +480,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
           } else {
-            res.send('{"status": "success"}');
+            res.send(result);
           }
         });
       }
@@ -484,7 +507,7 @@ module.exports = function(app) {
           if(err) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
           } else {
-            res.send('{"status": "success"}');
+            res.send(result);
           }
         }); 
       }
@@ -522,7 +545,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
           } else {
-            res.send('{"status": "success"}');
+            res.send(result);
           }
         }); 
       }
@@ -556,7 +579,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "unable to revive"}');
           } else {
-            res.send('{"status": "success"}');
+            res.send(result);
           }
         }); 
       }
