@@ -44,12 +44,12 @@ module.exports = function(app) {
       return;
     }
 
-    var email = wmysql.escape(req.body.email)
-    , password = rmysql.escape(req.body.password);
+    var email = req.body.email
+    , password = req.body.password;
 
     var statement = [
           'SELECT gu.gymid,g.name FROM gymUsers gu INNER JOIN gyms g ON gu.gymid = g.id '
-        , 'WHERE gu.username = ' + username + ' AND gu.password = ' + password
+        , 'WHERE gu.username = ' + wmysql.escape(username) + ' AND gu.password = ' + wmysql.escape(password)
     ].join(" ");
 
     var statement2 = [
@@ -273,13 +273,13 @@ module.exports = function(app) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
         });
 
-        var username = wmysql.escape(req.body.username),
-        , firstName = wmysql.escape(req.body.firstName),
-        , lastName = wmysql.escape(req.body.lastName);
+        var username = req.body.username,
+        , firstName = req.body.firstName,
+        , lastName = req.body.lastName;
 
         var statement = [
               'INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) '
-            , 'SELECT id,"' + token + '",' + username +  ',' + firstName + ',' + lastName + ',0,NOW() '
+            , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
             , 'FROM gyms g WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
         ].join(" ");
 
@@ -307,8 +307,8 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {   
 
-        var npass = wmysql.escape(req.body.npass)
-        , cpass = wmysql.escape(req.body.cpass)
+        var npass = req.body.npass
+        , cpass = req.body.cpass;
 
         var statement = [
               'SELECT password FROM gymUsers '
@@ -461,7 +461,7 @@ module.exports = function(app) {
 
 
 
-  app.put('/api/updateDisbursement/', function(req, res){
+  app.put('/api/provider/:pid/disbursement/update/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.body.paymenttype).isNumeric()
