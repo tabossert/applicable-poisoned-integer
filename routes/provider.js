@@ -175,46 +175,46 @@ module.exports = function(app) {
       } else { 
 
         var pid = req.params.pid
-        , name = wmysql.escape(req.body.name)
-        , address = wmysql.escape(req.body.address)
-        , city = wmysql.escape(req.body.city)
-        , state = wmysql.escape(req.body.state)
+        , name = req.body.name
+        , address = req.body.address
+        , city = req.body.city
+        , state = req.body.state
         , zipcode = req.body.zipcode
-        , phone = wmysql.escape(req.body.phone)
-        , email = wmysql.escape(req.body.email)
-        , contact = wmysql.escape(req.body.contact)
-        , facebook =  wmysql.escape(req.body.facebook)
-        , twitter = wmysql.escape(req.body.twitter)
-        , googleplus = wmysql.escape(req.body.googleplus)
-        , url = wmysql.escape(req.body.url)
-        , mondayOpen = wmysql.escape(req.body.mondayOpen)
-        , mondayClose = wmysql.escape(req.body.mondayClose)
-        , tuesdayOpen = wmysql.escape(req.body.tuesdayOpen)
-        , tuesdayClose = wmysql.escape(req.body.tuesdayClose)
-        , wednesdayOpen = wmysql.escape(req.body.wednesdayOpen)
-        , wednesdayClose = wmysql.escape(req.body.wednesdayClose)
-        , thursdayOpen = wmysql.escape(req.body.thursdayOpen)
-        , thursdayClose = wmysql.escape(req.body.thursdayClose)
-        , fridayOpen = wmysql.escape(req.body.fridayOpen)
-        , fridayClose = wmysql.escape(req.body.fridayClose)
-        , saturdayOpen = wmysql.escape(req.body.saturdayOpen)
-        , saturdayClose = wmysql.escape(req.body.saturdayClose)
-        , sundayOpen = wmysql.escape(req.body.sundayOpen)
-        , sundayClose = wmysql.escape(req.body.sundayClose);
+        , phone = req.body.phone
+        , email = req.body.email
+        , contact = req.body.contact
+        , facebook =  req.body.facebook
+        , twitter = req.body.twitter
+        , googleplus = req.body.googleplus
+        , url = req.body.url
+        , mondayOpen = req.body.mondayOpen
+        , mondayClose = req.body.mondayClose
+        , tuesdayOpen = req.body.tuesdayOpen
+        , tuesdayClose = req.body.tuesdayClose
+        , wednesdayOpen = req.body.wednesdayOpen
+        , wednesdayClose = req.body.wednesdayClose
+        , thursdayOpen = req.body.thursdayOpen
+        , thursdayClose = req.body.thursdayClose
+        , fridayOpen = req.body.fridayOpen
+        , fridayClose = req.body.fridayClose
+        , saturdayOpen = req.body.saturdayOpen
+        , saturdayClose = req.body.saturdayClose
+        , sundayOpen = req.body.sundayOpen
+        , sundayClose = req.body.sundayClose;
 
         var statement = [
-              'UPDATE gyms g set g.name = ' + name + ',g.address = ' + address + ',g.city = ' + city + ','
-            , 'g.state = ' + state + ',g.zipcode = ' + zipcode + ',g.phone = ' + phone + ','
-            , 'g.email = ' + email + ',g.contact = ' + contact + ',g.facebook = ' + facebook + ','
-            , 'g.twitter = ' + twitter + ',g.googleplus = ' + googleplus + ',g.url = ' + url + ',g.complete = true '
+              'UPDATE gyms g set g.name = ' + wmysql.escape(name) + ',g.address = ' + wmysql.escape(address) + ',g.city = ' + wmysql.escape(city) + ','
+            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + ',g.phone = ' + wmysql.escape(phone) + ','
+            , 'g.email = ' + wmysql.escape(email) + ',g.contact = ' + wmysql.escape(contact) + ',g.facebook = ' + wmysql.escape(facebook) + ','
+            , 'g.twitter = ' + wmysql.escape(twitter) + ',g.googleplus = ' + wmysql.escape(googleplus) + ',g.url = ' + wmysql.escape(url) + ',g.complete = true '
             , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
         ].join(" ");
 
         var statement2 = [
-              'UPDATE hours h set mondayOpen = ' + mondayOpen + ',mondayClose = ' + mondayClose + ','
-            , 'tuesdayOpen = ' + tuesdayOpen + ',tuesdayClose = ' + tuesdayClose + ', wednesdayOpen = ' + wednesdayOpen + ',wednesdayClose = ' + wednesdayClose + ','
-            , 'thursdayOpen = ' + thursdayOpen + ',thursdayClose = ' + thursdayClose + ',fridayOpen = ' + fridayOpen + ',fridayClose = ' + fridayClose + ','
-            , 'saturdayOpen = ' + saturdayOpen + ',saturdayClose = ' + saturdayClose + ',sundayOpen = ' + sundayOpen + ',sundayClose = ' + sundayClose + ' '
+              'UPDATE hours h set mondayOpen = ' + wmysql.escape(mondayOpen) + ',mondayClose = ' + wmysql.escape(mondayClose) + ','
+            , 'tuesdayOpen = ' + wmysql.escape(tuesdayOpen) + ',tuesdayClose = ' + wmysql.escape(tuesdayClose) + ', wednesdayOpen = ' + wmysql.escape(wednesdayOpen) + ',wednesdayClose = ' + wmysql.escape(wednesdayClose) + ','
+            , 'thursdayOpen = ' + wmysql.escape(thursdayOpen) + ',thursdayClose = ' + wmysql.escape(thursdayClose) + ',fridayOpen = ' + wmysql.escape(fridayOpen) + ',fridayClose = ' + wmysql.escape(fridayClose) + ','
+            , 'saturdayOpen = ' + wmysql.escape(saturdayOpen) + ',saturdayClose = ' + wmysql.escape(saturdayClose) + ',sundayOpen = ' + wmysql.escape(sundayOpen) + ',sundayClose = ' + wmysql.escape(sundayClose) + ' '
             , 'WHERE ' + data.groupid + ' = 1 AND h.gymid = ' + data.gymid
         ].join(" ");        
 
@@ -273,8 +273,8 @@ module.exports = function(app) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
         });
 
-        var username = req.body.username,
-        , firstName = req.body.firstName,
+        var username = req.body.username
+        , firstName = req.body.firstName
         , lastName = req.body.lastName;
 
         var statement = [
