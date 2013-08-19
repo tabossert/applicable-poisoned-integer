@@ -73,15 +73,15 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
 
-        var start = rmysql.escape(req.params.start)
-        , end = rmysql.escape(req.params.stop)
+        var start = req.params.start
+        , end = req.params.stop;
 
         var statement = [
               'SELECT sc.id AS scid,c.id AS cid,c.service,c.color,sc.active,sc.price,sc.spots,sc.datetime '
             , 'FROM classes c INNER JOIN scheduledClass sc ON c.id = sc.classid '
             , 'WHERE c.gymid = ' + data.gymid
-            , ((start) ? ' AND sc.datetime >= ' + start : '')
-            , ((end) ? ' AND sc.datetime >= ' + end : '')
+            , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
+            , ((end) ? ' AND sc.datetime >= ' + rmysql.escape(end) : '')
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
@@ -148,15 +148,15 @@ module.exports = function(app) {
         return res.send(401,'{"status": "failed", "message": "invalid token"}');
       }
     
-      var start = rmysql.escape(req.params.start)
-        , end = rmysql.escape(req.params.end);
+      var start = req.params.start
+        , end = req.params.end;
       
       var statement = [
             'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime '
           , ' FROM scheduledClass sc'
           , ' WHERE sc.gymid = ' + data.gymid
-          , ((start) ? ' AND sc.datetime >= ' + start : '')
-          , ((end) ? ' AND sc.datetime <= ' + end : '')
+          , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
+          , ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
           , ' ORDER BY sc.datetime'
           ].join(" ");
     
@@ -256,12 +256,12 @@ module.exports = function(app) {
         return res.send(401,'{"status": "failed", "message": "invalid token"}');
       }
     
-      var participantId = wmysql.escape(req.params.participantId);
+      var participantId = req.params.participantId;
 
       var statement = [
           'UPDATE schedule s INNER JOIN gymUsers gu ON s.gymid = gu.gymid '
         , 'SET s.checkin = 1 XOR s.checkin, s.chkintime = NOW() '
-        , 'WHERE s.id = ' + participantId + ' AND g.id = ' + data.gymid
+        , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND g.id = ' + data.gymid
         ].join(" ");
       
       rmysql.query(statement, function(err, result) {
@@ -288,12 +288,12 @@ module.exports = function(app) {
       } else { 
         var cid = 0
         , color = ""
-        , service = wmysql.escape(req.body.service)
-        , image = wmysql.escape(req.body.image)
+        , service = req.body.service
+        , image = req.body.image
         , duration = req.body.duration
         , price = req.body.price
         , spots = req.body.spots
-        , description = wmysql.escape(req.body.description);
+        , description = req.body.description;
         
         if(spots == null) {
           var spots = 30;
@@ -302,7 +302,7 @@ module.exports = function(app) {
         var statement = [
               'INSERT INTO classes '
             , '(gymid,service,image,duration,price,spots,`desc`,color) '
-            , 'SELECT ' + data.gymid + ',' + service + ',' + image + ',' + duration + ',' + price + ',' + spots + ',' + description + ',"' + color + '"'
+            , 'SELECT ' + data.gymid + ',' + wmysql.escape(service) + ',' + wmysql.escape(image) + ',' + duration + ',' + price + ',' + spots + ',' + wmysql.escape(description) + ',"' + color + '"'
         ].join(" ");
 
         var statement2 = [
@@ -344,7 +344,7 @@ module.exports = function(app) {
       return;
     }
 
-    var classId = rmysql.escape(req.params.classId);
+    var classId = req.params.classId;
 
     var statement = [
           'SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor'
@@ -371,7 +371,7 @@ module.exports = function(app) {
       return;
     }
 
-    var classId = rmysql.escape(req.params.classId);
+    var classId = req.params.classId;
 
     var statement = [
           'SELECT weekday,GROUP_CONCAT(time) AS time ',
@@ -405,12 +405,12 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
         var classId = req.params.classId
-        , service = wmysql.escape(req.body.service)
-        , image = wmysql.escape(req.body.image)
+        , service = req.body.service
+        , image = req.body.image
         , duration = req.body.duration
         , spots = req.body.spots
         , price = req.body.price
-        , description = wmysql.escape(req.body.description)
+        , description = req.body.description
         , days = req.body.days;
 
         if(spots == null) {
@@ -419,8 +419,8 @@ module.exports = function(app) {
 
         var statement = [
               'UPDATE classes c '
-            , 'SET service = ' + service + ',image = ' + image + ',instructor = ' + instructor + ' '
-            , 'duration = ' + duration + ',price = ' + price + ',spots = ' + spots + ',`desc` = ' + description + ' '
+            , 'SET service = ' + wmysql.escape(service) + ',image = ' + wmysql.escape(image) + ',instructor = ' + wmysql.escape(instructor) + ' '
+            , 'duration = ' + duration + ',price = ' + price + ',spots = ' + spots + ',`desc` = ' + wmysql.escape(description) + ' '
             , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
         ].join(" ");
 
@@ -495,12 +495,12 @@ module.exports = function(app) {
       } else { 
 
         var classId = req.body.classId
-        , datetime = wmysql.escape(req.body.datetime);
+        , datetime = req.body.datetime;
 
         var statement = [
               'UPDATE scheduledClass sc '
             , 'SET active = 0 '
-            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + datetime + ' AND sc.gymid = ' + data.gymid
+            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + wmysql.escape(datetime) + ' AND sc.gymid = ' + data.gymid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
@@ -533,12 +533,12 @@ module.exports = function(app) {
         var classId = req.body.classId
         , price = req.body.price
         , spots = req.body.spots
-        , datetime = wmysql.escape(req.body.datetime);
+        , datetime = req.body.datetime;
 
         var statement = [
               'UPDATE scheduledClass sc '
             , 'SET datetime = ' + datetime + ',spots = ' + spots + ',price = ' + price + ' '
-            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + datetime + ' AND sc.gymid = ' + data.gymid
+            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + wmysql.escape(datetime) + ' AND sc.gymid = ' + data.gymid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
@@ -567,12 +567,12 @@ module.exports = function(app) {
       } else { 
 
         var classId = req.params.classId
-        , datetime = wmysql.escape(req.body.datetime);
+        , datetime = req.body.datetime;
 
         var statement = [
               'UPDATE scheduledClass sc '
             , 'SET active = 1 '
-            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + datetime + ' AND sc.gymid = ' + data.gymid
+            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + wmysql.escape(datetime) + ' AND sc.gymid = ' + data.gymid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
