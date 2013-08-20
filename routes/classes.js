@@ -166,7 +166,7 @@ module.exports = function(app) {
             res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
           } else {
             classObj.id = result.insertId;
-              res.send( JSON.stringify(classObj) );
+            res.send( JSON.stringify(classObj) );
           }
         });
       }
