@@ -112,10 +112,10 @@ module.exports = function(app) {
     });
   });
 
-  app.post('/api/provider/:pid/imageUpdate/', function(req, res){
+  app.post('/api/provider/:providerId/imageUpdate/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
+      check(req.params.providerId).isNumeric();
       check(req.body.image).notNull(); 
       check(req.body.iName).isAlphanumeric(); 
     } catch (e) {
@@ -161,10 +161,10 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:pid/', function(req, res){
+  app.post('/api/provider/:providerId/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
+      check(req.params.providerId).isNumeric();
       check(req.body.zipcode).len(5,5).isNumeric()  
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
@@ -175,7 +175,7 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
 
-        var pid = req.params.pid
+        var providerId = req.params.providerId
         , name = req.body.name
         , address = req.body.address
         , city = req.body.city
@@ -228,9 +228,9 @@ module.exports = function(app) {
                 res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
               } else {
                 geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lng,lat) {
-                  cordinatesModel.findOne({gymid: pid}, function(err, p) {
+                  cordinatesModel.findOne({gymid: providerId}, function(err, p) {
                     if(!p) {
-                      var gymLoc = new cordinatesModel({ gymid: pid, loc: {lat: lat, lng: lng }});
+                      var gymLoc = new cordinatesModel({ gymid: providerId, loc: {lat: lat, lng: lng }});
                         gymLoc.save(function (err) {
                           if(err)
                             res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
@@ -258,10 +258,10 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:pid/employee/', function(req, res){
+  app.post('/api/provider/:providerId/employee/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
+      check(req.params.providerId).isNumeric();
       check(req.body.username).len(1,12).isAlphanumeric()
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
@@ -297,11 +297,11 @@ module.exports = function(app) {
   });
 
 
-  app.put('/api/provider/:pid/employee/:eid/updatePassword/', function(req, res) {
+  app.put('/api/provider/:providerId/employee/:employeemployeeId/updatePassword/', function(req, res) {
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
-      check(req.params.eid).isNumeric();
+      check(req.params.providerId).isNumeric();
+      check(req.params.employeeId).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -342,11 +342,11 @@ module.exports = function(app) {
   });
 
 
-  app.del('/api/provider/:pid/employee/:eid/', function(req, res){
+  app.del('/api/provider/:providerId/employee/:employeeId/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
-      check(req.params.eid).isNumeric();
+      check(req.params.providerId).isNumeric();
+      check(req.params.employeeId).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -356,9 +356,11 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
 
+        var employeeId = req.params.employeeId;
+
         var statement = [
               'DELETE FROM gymUsers '
-            , 'WHERE id = ' + data.id + ' AND ' + data.groupid + ' = 1 AND gu.gymid = ' + data.gymid 
+            , 'WHERE id = ' + employeeId + ' AND ' + data.groupid + ' = 1 AND gu.gymid = ' + data.gymid 
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
@@ -373,10 +375,10 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/provider/:pid/balance/', function(req, res){
+  app.get('/api/provider/:providerId/balance/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
+      check(req.params.providerId).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -428,10 +430,10 @@ module.exports = function(app) {
   });*/
 
   
-  app.get('/api/provider/:pid/disbursement/', function(req, res){
+  app.get('/api/provider/:providerId/disbursement/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
+      check(req.params.providerId).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -459,10 +461,10 @@ module.exports = function(app) {
 
 
 
-  app.put('/api/provider/:pid/disbursement/', function(req, res){
+  app.put('/api/provider/:providerId/disbursement/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.params.pid).isNumeric();
+      check(req.params.providerId).isNumeric();
       check(req.body.paymenttype).isNumeric()
       check(req.body.type).isNumeric()
       check(req.body.paylimit).isDecimal();
