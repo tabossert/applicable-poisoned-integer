@@ -115,6 +115,7 @@ module.exports = function(app) {
   app.post('/api/provider/:pid/imageUpdate/', function(req, res){
     try {
       check(req.header('token')).notNull();
+      check(req.params.pid).isNumeric();
       check(req.body.image).notNull(); 
       check(req.body.iName).isAlphanumeric(); 
     } catch (e) {
@@ -260,6 +261,7 @@ module.exports = function(app) {
   app.post('/api/provider/:pid/employee/', function(req, res){
     try {
       check(req.header('token')).notNull();
+      check(req.params.pid).isNumeric();
       check(req.body.username).len(1,12).isAlphanumeric()
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
@@ -298,6 +300,8 @@ module.exports = function(app) {
   app.put('/api/provider/:pid/employee/:eid/updatePassword/', function(req, res) {
     try {
       check(req.header('token')).notNull();
+      check(req.params.pid).isNumeric();
+      check(req.params.eid).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -338,10 +342,11 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:pid/employee/:eid/', function(req, res){
+  app.del('/api/provider/:pid/employee/:eid/', function(req, res){
     try {
       check(req.header('token')).notNull();
-      check(req.body.eid).isNumeric();
+      check(req.params.pid).isNumeric();
+      check(req.params.eid).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -352,24 +357,15 @@ module.exports = function(app) {
       } else { 
 
         var statement = [
-              'SELECT id FROM gymUsers '
-            , 'WHERE groupid = 1 AND id = ' + data.id
-        ].join(" ");
-
-        var statement2 = [
               'DELETE FROM gymUsers '
-            , 'WHERE id = ' + data.id
+            , 'WHERE id = ' + data.id + ' AND ' + data.groupid + ' = 1 AND gu.gymid = ' + data.gymid 
         ].join(" ");
 
-        rmysql.query(statement, function(err, result, fields) {
-          if(result.length > 0) {
-            wmysql.query(statement2, function(err, result, fields) {
-              if(err || result.affectedRows < 1) {
-                res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
-              } else {
-                res.send(result);
-              }
-            });
+        wmysql.query(statement, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
+          } else {
+            res.send(result);
           }
         });
       }
@@ -380,6 +376,7 @@ module.exports = function(app) {
   app.get('/api/provider/:pid/balance/', function(req, res){
     try {
       check(req.header('token')).notNull();
+      check(req.params.pid).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -434,6 +431,7 @@ module.exports = function(app) {
   app.get('/api/provider/:pid/disbursement/', function(req, res){
     try {
       check(req.header('token')).notNull();
+      check(req.params.pid).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -464,6 +462,7 @@ module.exports = function(app) {
   app.put('/api/provider/:pid/disbursement/', function(req, res){
     try {
       check(req.header('token')).notNull();
+      check(req.params.pid).isNumeric();
       check(req.body.paymenttype).isNumeric()
       check(req.body.type).isNumeric()
       check(req.body.paylimit).isDecimal();
