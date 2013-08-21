@@ -209,7 +209,7 @@ module.exports = function(app) {
   });
 
 
-  app.put('/api/participants/:participantId/', function(req, res) {
+  app.put('/api/classes/:classId/participants/:participantId/', function(req, res) {
     try {
       check(req.params.participantId).isNumeric();
       check(req.header('token')).notNull();
@@ -225,17 +225,21 @@ module.exports = function(app) {
     
       var participantId = req.params.participantId;
 
+      var particObj = {};
+      particObj.classId = req.params.classId;
+      particObj.participantId = req.params.participantId;
+
       var statement = [
-          'UPDATE schedule s INNER JOIN gymUsers gu ON s.gymid = gu.gymid '
+          'UPDATE schedule s  '
         , 'SET s.checkin = 1 XOR s.checkin, s.chkintime = NOW() '
-        , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND g.id = ' + data.gymid
+        , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND s.gymid = ' + data.gymid
         ].join(" ");
       
       rmysql.query(statement, function(err, result) {
         if(err) {
           res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
         } else {
-          res.send(result);
+          res.send( particObj );
         }
       });
     });
