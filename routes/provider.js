@@ -33,8 +33,19 @@ var CFcontainer = config.CloudFiles.CFcontainer;
 var CFclient = cloudfiles.createClient(CFconfig);
 
 var memcached = require('../lib/memcached');
+var es = require('../lib/elasticsearch');
 
 module.exports = function(app) {
+
+  es.indexProvider(32,function(err, obj) {
+    //console.log(obj);
+    //console.log(err);
+  });
+
+  es.search(function(err,data) {
+    //console.log(err)
+    console.log(data.hits.hits)
+  });
 
   app.post('/api/provider/login/', function(req, res){
     try {
