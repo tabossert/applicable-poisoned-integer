@@ -9,7 +9,8 @@ var config = config = require('config')
   , crypto = require('crypto')
   , mongoose = require("mongoose")
   , check = require('validator').check
-  , sanitize = require('validator').sanitize;
+  , sanitize = require('validator').sanitize
+  , util = require('util');
 
 // API config settings
 var salt = config.Hash.salt;
@@ -37,37 +38,42 @@ var memcached = require('../lib/memcached');
 module.exports = function(app) {
 
   app.post('/api/provider/login/', function(req, res){
+    
+    var username = req.body.username
+    , password = req.body.password;
+    
     try {
-      check(req.body.username).isEmail();
+      check(username).isEmail();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
 
-    var email = req.body.email
-    , password = req.body.password;
+    
 
     var statement = [
           'SELECT gu.gymid,g.name FROM gymUsers gu INNER JOIN gyms g ON gu.gymid = g.id '
-        , 'WHERE gu.username = ' + wmysql.escape(username) + ' AND gu.password = ' + wmysql.escape(password)
+        , 'WHERE gu.username = %s AND gu.password = %s'
     ].join(" ");
 
     var statement2 = [
-          'UPDATE gymUsers SET token = "' + token + '", lastlogin = NOW() '
-        , 'WHERE id = ' + id
+          'UPDATE gymUsers SET token = "%s", lastlogin = NOW() '
+        , 'WHERE gymid = %s'
     ].join(" ");
 
-    rmysql.query(statement, function(err, result, fields) {
+    rmysql.query( util.format(statement, wmysql.escape(username), wmysql.escape(password)), function(err, result, fields) {
       if(result.length > 0){
         
         var gymid = result[0].gymid
         , name = result[0].name
         , id = result[0].id;
-
+        
         require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+          console.log("** routes/provider/login **", "result", result);
           
-          wmysql.query(statement2, function(err, result, fields){
+          wmysql.query( util.format(statement2, token, gymid), function(err, result, fields){
+            console.log("** routes/provider/login **", "2nd result", result);
             if(err || result.affectedRows < 1) {
               res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
             } else {
