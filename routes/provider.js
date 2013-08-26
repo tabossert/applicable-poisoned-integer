@@ -37,14 +37,16 @@ var es = require('../lib/elasticsearch');
 
 module.exports = function(app) {
 
-  es.indexProvider(32,function(err, obj) {
+  /*es.indexProvider(22,function(err, obj) {
     //console.log(obj);
     //console.log(err);
-  });
-
-  es.search(function(err,data) {
+  });*/
+  
+  keywords = ['yoga', 'karate'];
+  
+  es.search(keywords,'100',37.88,-122.05,function(err,data) {
     //console.log(err)
-    console.log(data.hits.hits)
+    console.log(data.hits.hits[0]._id)
   });
 
   app.post('/api/provider/login/', function(req, res){
@@ -159,6 +161,7 @@ module.exports = function(app) {
                     if(err || result.affectedRows < 1) {
                       res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
                     } else {
+                      es.indexProvider(data.gymid,function(err, obj) { });
                       res.send('{"path": "' + CFcontainer + req.body.iName + '"}');
                     }
                   });
@@ -216,7 +219,7 @@ module.exports = function(app) {
 
         var statement = [
               'UPDATE gyms g set g.name = ' + wmysql.escape(name) + ',g.address = ' + wmysql.escape(address) + ',g.city = ' + wmysql.escape(city) + ','
-            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + ',g.phone = ' + wmysql.escape(phone) + ','
+            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + 'g.lat = ' + lat + ',g.lon = ' + lon + ',g.phone = ' + wmysql.escape(phone) + ','
             , 'g.email = ' + wmysql.escape(email) + ',g.contact = ' + wmysql.escape(contact) + ',g.facebook = ' + wmysql.escape(facebook) + ','
             , 'g.twitter = ' + wmysql.escape(twitter) + ',g.googleplus = ' + wmysql.escape(googleplus) + ',g.url = ' + wmysql.escape(url) + ',g.complete = true '
             , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
@@ -230,38 +233,25 @@ module.exports = function(app) {
             , 'WHERE ' + data.groupid + ' = 1 AND h.gymid = ' + data.gymid
         ].join(" ");        
 
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "update to row failed"}');
-          } else {
-            wmysql.query(statement2, function(err, result, fields) {
+        geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lat,lon,details) {
+          if(lat) {
+            wmysql.query(statement, function(err, result, fields) {
               if(err || result.affectedRows < 1) {
-                res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
-              } else {
-                geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lng,lat) {
-                  cordinatesModel.findOne({gymid: providerId}, function(err, p) {
-                    if(!p) {
-                      var gymLoc = new cordinatesModel({ gymid: providerId, loc: {lat: lat, lng: lng }});
-                        gymLoc.save(function (err) {
-                          if(err)
-                            res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
-                          else   
-                            res.send(result);
-                        });
-                      } else { 
-                        p.loc.lat = lat;
-                        p.loc.lng = lng;  
-                        p.save(function(err) {
-                          if(err) 
-                            res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
-                          else
-                            res.send(result);
-                        });
-                      }
-                    });
-                  });
-                } 
+                res.send(400,'{"status": "failed", "message": "update to provider table failed"}');
+              }
+              es.indexProvider(data.gymid,function(err, obj) { });
             });
+          } else {
+            res.send(400,'{"status": "failed", "message": "update to convert address to cordinates"}');
+          }
+        });
+
+        wmysql.query(statement2, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
+          } else {
+            providerObj.id = result.insertId;
+            res.send( JSON.stringify(providerObj) );
           } 
         });
       }
