@@ -38,13 +38,13 @@ var es = require('../lib/elasticsearch');
 
 module.exports = function(app) {
 
-  /*es.indexProvider(22,function(err, obj) {
+  es.indexProvider(22,function(err, obj) {
     //console.log(obj);
     //console.log(err);
-  });*/
+  });
   
   keywords = ['yoga', 'karate'];
-  
+
   es.search(keywords,'100',37.88,-122.05,function(err,data) {
     //console.log(err)
     console.log(data.hits.hits[0]._id)
@@ -154,12 +154,12 @@ module.exports = function(app) {
             , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
         ].join(" ");
 
-        fs.writeFile('images/' + req.body.iName, new Buffer(req.body.image, "base64"), function(err) {
+        fs.writeFile('images/' + iName, new Buffer(image, "base64"), function(err) {
           CFclient.setAuth(function (err) {
             if(err) {
               res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
             } else {
-              CFclient.addFile('gymImages', { remote: req.body.iName, local: 'images/' + req.body.iName }, function (err, uploaded) {
+              CFclient.addFile('gymImages', { remote: iName, local: 'images/' + iName }, function (err, uploaded) {
                 if(err) {
                   res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
                 } else {
@@ -168,7 +168,7 @@ module.exports = function(app) {
                       res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
                     } else {
                       es.indexProvider(data.gymid,function(err, obj) { });
-                      res.send('{"path": "' + CFcontainer + req.body.iName + '"}');
+                      res.send('{"path": "' + CFcontainer + iName + '"}');
                     }
                   });
                 }
@@ -225,7 +225,7 @@ module.exports = function(app) {
 
         var statement = [
               'UPDATE gyms g set g.name = ' + wmysql.escape(name) + ',g.address = ' + wmysql.escape(address) + ',g.city = ' + wmysql.escape(city) + ','
-            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + 'g.lat = ' + lat + ',g.lon = ' + lon + ',g.phone = ' + wmysql.escape(phone) + ','
+            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + 'g.lat = %s,g.lon = %s,g.phone = ' + wmysql.escape(phone) + ','
             , 'g.email = ' + wmysql.escape(email) + ',g.contact = ' + wmysql.escape(contact) + ',g.facebook = ' + wmysql.escape(facebook) + ','
             , 'g.twitter = ' + wmysql.escape(twitter) + ',g.googleplus = ' + wmysql.escape(googleplus) + ',g.url = ' + wmysql.escape(url) + ',g.complete = true '
             , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
@@ -241,11 +241,10 @@ module.exports = function(app) {
 
         geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lat,lon,details) {
           if(lat) {
-            wmysql.query(statement, function(err, result, fields) {
+            wmysql.query(util.format(statement, lat, lon), function(err, result, fields) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to provider table failed"}');
               }
-              es.indexProvider(data.gymid,function(err, obj) { });
             });
           } else {
             res.send(400,'{"status": "failed", "message": "update to convert address to cordinates"}');
@@ -256,6 +255,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
           } else {
+            es.indexProvider(data.gymid,function(err, obj) { });
             providerObj.id = result.insertId;
             res.send( JSON.stringify(providerObj) );
           } 
