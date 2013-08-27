@@ -2,6 +2,8 @@
  *  Routes related to classes
  */
 
+// ** TODO **
+// - Move routes to use memcache class/scheduledClass objects
 
 var config = config = require('config')
   , moment = require('moment')
