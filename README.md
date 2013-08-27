@@ -48,6 +48,11 @@ gpgcheck=1
 - /etc/init.d/memcached start
 - chkconfig --levels 235 memcached on
 
+## ElasticSearch Setup ##
+- wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.3.zip
+- unzip elasticsearch-0.90.3.zip
+- cd elasticsearch-0.90.3
+- bin/elasticsearch -f
 
 ## API setup ##
 - mkdir /var/node/
