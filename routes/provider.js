@@ -2,8 +2,8 @@
  *  Routes related to providers
  */
 
-// ** TODO 
-// - change some get calls to use elasticsearch and memcache 
+//TODO
+//change some get calls to use elasticsearch and memcache
 
 var config = config = require('config')
   , moment = require('moment')
