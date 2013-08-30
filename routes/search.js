@@ -2,6 +2,10 @@
  * Provide search based routes
  */
 
+//TODO
+//rewrite search to use elasticsearch and memcache
+
+
 var config = config = require('config')
   , moment = require('moment')
   , S = require('string')

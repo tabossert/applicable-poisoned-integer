@@ -43,3 +43,7 @@ Stripe:
 
 Hash:
   salt: oniud9duhfd&bhsdbds&&%bdudbds5;odnonoiusdbuyd$
+
+elasticSearch:
+  hosts: localhost
+  port: 9200
