@@ -41,7 +41,7 @@ var es = require('../lib/elasticsearch');
 
 module.exports = function(app) {
 
-  es.indexProvider(22,function(err, obj) {
+  /*es.indexProvider(22,function(err, obj) {
     //console.log(obj);
     //console.log(err);
   });
@@ -51,9 +51,9 @@ module.exports = function(app) {
   es.search(keywords,'100',37.88,-122.05,function(err,data) {
     //console.log(err)
     console.log(data.hits.hits[0]._id)
-  });
+  });*/
 
-  app.post('/api/provider/login/', function(req, res){
+  app.put('/api/provider/login/', function(req, res){
     
     var username = req.body.username
     , password = req.body.password;
@@ -105,7 +105,7 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/provider/logout/', function(req, res){
+  app.put('/api/provider/:providerId/logout/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -115,7 +115,9 @@ module.exports = function(app) {
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
+      } else {
+
+        var providerId = req.params.providerId;
 
         var statement = [
               'UPDATE gymUsers SET token = null '
@@ -127,14 +129,14 @@ module.exports = function(app) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
           } else {
             memcached.remMemKey(req.header('token'));
-            res.send(result);
+            res.send( '{"providerId": ' + providerId + '}' );
           }
         });
       }
     });
   });
 
-  app.post('/api/provider/:providerId/imageUpdate/', function(req, res){
+  app.put('/api/provider/:providerId/imageUpdate/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.params.providerId).isNumeric();
@@ -151,6 +153,8 @@ module.exports = function(app) {
 
         var iName = req.body.iName
         , image = req.body.image;
+
+        var imageObj = req.body;
 
         var statement = [
               'UPDATE gyms g SET g.image = ' + wmysql.escape(CFcontainer + iName) + ' '
@@ -170,8 +174,9 @@ module.exports = function(app) {
                     if(err || result.affectedRows < 1) {
                       res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
                     } else {
+                      imageObj.path = CFcontainer + iName;
                       es.indexProvider(data.gymid,function(err, obj) { });
-                      res.send('{"path": "' + CFcontainer + iName + '"}');
+                      res.send( imageObj );
                     }
                   });
                 }
@@ -226,6 +231,8 @@ module.exports = function(app) {
         , sundayOpen = req.body.sundayOpen
         , sundayClose = req.body.sundayClose;
 
+        var providerObj = req.body;
+
         var statement = [
               'UPDATE gyms g set g.name = ' + wmysql.escape(name) + ',g.address = ' + wmysql.escape(address) + ',g.city = ' + wmysql.escape(city) + ','
             , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + 'g.lat = %s,g.lon = %s,g.phone = ' + wmysql.escape(phone) + ','
@@ -259,8 +266,8 @@ module.exports = function(app) {
             res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
           } else {
             es.indexProvider(data.gymid,function(err, obj) { });
-            providerObj.id = result.insertId;
-            res.send( JSON.stringify(providerObj) );
+            providerObj.providerId = result.insertId;
+            res.send( providerObj );
           } 
         });
       }
@@ -283,31 +290,34 @@ module.exports = function(app) {
       } else { 
         require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
-        });
 
-        var username = req.body.username
-        , firstName = req.body.firstName
-        , lastName = req.body.lastName;
+          var username = req.body.username
+          , firstName = req.body.firstName
+          , lastName = req.body.lastName;
 
-        var statement = [
-              'INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) '
-            , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
-            , 'FROM gyms g WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
-        ].join(" ");
+          var empObj = req.body;
 
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
-          } else {
-            res.send(result);
-          }
+          var statement = [
+                'INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) '
+              , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
+              , 'FROM gyms g WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
+          ].join(" ");
+
+          wmysql.query(statement, function(err, result, fields) {
+            if(err || result.affectedRows < 1) {
+              res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
+            } else {
+              empObj.employeeId = result.insertId;
+              res.send( empObj );
+            }
+          });
         });
       }
     });
   });
 
 
-  app.put('/api/provider/:providerId/employee/:employeemployeeId/updatePassword/', function(req, res) {
+  app.put('/api/provider/:providerId/employee/:employeeId/updatePassword/', function(req, res) {
     try {
       check(req.header('token')).notNull();
       check(req.params.providerId).isNumeric();
@@ -321,7 +331,9 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {   
 
-        var npass = req.body.npass
+        var providerId = req.params.providerId
+        , employeeId = req.params.employeeId
+        , npass = req.body.npass
         , cpass = req.body.cpass;
 
         var statement = [
@@ -330,17 +342,17 @@ module.exports = function(app) {
         ].join(" ");
 
         var statement2 = [
-              'UPDATE gymUsers SET password = ' + wmysql.escape(req.body.npass) + ' '
+              'UPDATE gymUsers SET password = ' + wmysql.escape(npass) + ' '
             , 'WHERE id = ' + data.id
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
-          if(result.password == req.body.cpass) {
+          if(result.password == cpass) {
             wmysql.query(statement2, function(err, result, fields) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
               } else {
-                res.send(result);
+                res.send( '{"employeeId": ' + employeeId + '}' );
               }
             });
           } else {
@@ -377,7 +389,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
           } else {
-            res.send(result);
+            res.send( '{"employeeId": ' + employeeId + '}' );
           }
         });
       }
@@ -405,10 +417,10 @@ module.exports = function(app) {
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
-          if(err || result.length < 1) {
+          if(err || !result) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve balance"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
@@ -462,7 +474,7 @@ module.exports = function(app) {
           if (err || result.length < 1) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve disbursement"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
@@ -491,6 +503,8 @@ module.exports = function(app) {
         , paylimit = req.body.paylimit
         , type = req.body.type;
 
+        var disbObj = req.body;
+
         var statement = [
               'UPDATE disbursement d '
             , 'SET d.paymenttype = ' + paymenttype + ',d.paylimit = ' + paylimit + ',d.type = ' + type + ' '
@@ -502,7 +516,7 @@ module.exports = function(app) {
           if (err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "update to disbursement row failed"}');
           } else {
-            res.send(result);
+            res.send( disbObj );
           }
         });
       }

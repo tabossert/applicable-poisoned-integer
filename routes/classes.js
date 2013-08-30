@@ -3,7 +3,7 @@
  */
 
 //TODO
-//Move routes to use memcache class/scheduledClass objects
+
 
 var config = config = require('config')
   , moment = require('moment')
@@ -23,26 +23,26 @@ var memcached = require('../lib/memcached');
 module.exports = function(app) {
   var colorArr = ['#FF0000','#8A0808','FF8000','#F7FE2E','#00FF00','#0B610B','#00FFFF','#0000FF','#0B0B61','#FA5882','#380B61','#585858']
 
+  //This used by provider panel only - TESTED
+  function getColor(gymid,callback) {
 
-  function getColor(token,callback) {
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
+    var statement = [
+          'SELECT c.color FROM classes c '
+        , 'WHERE c.gymid = ' + gymid + 'ORDER BY c.id DESC LIMIT 1'
+    ].join(" ");
 
-        var statement = [
-              'SELECT c.color FROM classes c '
-            , 'WHERE c.gymid = ' + data.gymid + 'ORDER BY c.id DESC LIMIT 1'
-        ].join(" ");
-
-        rmysql.query(statement, function(err, result, fields) {
-          colorIndex = colorArr.indexOf(result[0].color) + 1;
-          callback(colorArr[colorIndex]);
-        });
+    rmysql.query(statement, function(err, result, fields) {
+      if(!result) {
+        callback('#FF0000');
+      } else {
+        colorIndex = colorArr.indexOf(result[0].color) + 1;
+        callback(colorArr[colorIndex]);
       }
     });
   }
 
+
+  //This used by provider panel only - TESTED
   app.get('/api/classes/', function(req, res){
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
@@ -58,7 +58,7 @@ module.exports = function(app) {
           if(err) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
@@ -66,45 +66,171 @@ module.exports = function(app) {
   });
 
 
-  /*app.get('/api/partner/:gid/classes', function(req, res){
+  //This used by customer and partner panel - TESTED
+  app.get('/api/classes/:classId/', function(req, res){
     try {
-      check(req.params.gid).isNumeric();
+      check(req.params.classId).isNumeric()
+    } catch (e) {
+      res.send('{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+
+    var classId = req.params.classId;
+
+    memcached.isMemClass(classId, function(err,cData) {
+      if(err) {
+        res.send('{"status": "failed", "message": "unable to find class: ' + err + '"}');
+      } else {
+        res.send( cData );
+      }
+    });
+  });
+
+
+  //This used by partner panel only - TESTED
+  app.put('/api/classes/:classId/', function(req, res){
+    try {
+      check(req.header('token')).notNull();
+      check(req.body.duration).isNumeric();
+      check(req.body.price).len(1,7).isDecimal();
+      check(req.body.spots).isNumeric();
+      check(req.body.dayPass).isNumeric();
+      check(req.params.classId).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    var i = 0;
-    var search = "";
-    if(req.query.search !== undefined) {
-      var terms = req.query.search.split(',');
-      len = terms.length;
-      for (i = 0; i < len; i++){
-        search = search + '"' + terms[i] + '",';
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+      if(err) {
+        res.send(401,'{"status": "failed", "message": "invalid token"}');
+      } else {
+        var classId = req.params.classId
+          , service = req.body.service
+          , image = req.body.image
+          , instructor = req.body.instructor
+          , duration = req.body.duration
+          , spots = req.body.spots
+          , price = req.body.price
+          , active = req.body.active
+          , dayPass = req.body.dayPass
+          , description = req.body.description;
+
+        if(spots == null) {
+          var spots = 30;
+        }
+
+        var statement = [
+          'UPDATE classes c '
+          , 'SET service = ' + wmysql.escape(service) + ',image = ' + wmysql.escape(image) + ',instructor = ' + wmysql.escape(instructor) + ' '
+          , ',duration = ' + duration + ',price = ' + price + ',active = ' + active + ',daypass = ' + dayPass + ',spots = ' + spots + ',`desc` = ' + wmysql.escape(description) + ' '
+          , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
+        ].join(" ");
+
+        wmysql.query(statement, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
+          } else {
+            memcached.setMemClass(classId, function(err, cData) { });
+            res.send( req.body );
+          }
+        });
       }
+    });
+  });
+
+
+  //This used by partner panel only - TESTED
+  app.post('/api/classes/', function(req, res){
+    try {
+      check(req.header('token')).notNull();
+      check(req.body.duration).isNumeric();
+      check(req.body.price).len(1,7).isDecimal();
+      check(req.body.spots).isNumeric();
+      check(req.body.dayPass).isNumeric();
+
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
     }
-    search = search + "service";
-
-    rmysql.query('select id,gymid,service,instructor,duration,price,spots,`desc`,image from classes where gymid = ' + rmysql.escape(req.params.gid) + ' ORDER BY FIELD(service,' + search + ',service) ASC', function(err, result, fields) {
-     if(err || result.length < 1) {
-        res.send(400,'{"status": "failed", "message": "no gym matched id"}');
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+      if(err) {
+        res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        res.send(result);
+        var cid = 0
+          , color = ""
+          , service = req.body.service
+          , image = req.body.image
+          , instructor = req.body.instructor
+          , duration = req.body.duration
+          , price = req.body.price
+          , spots = req.body.spots
+          , dayPass = req.body.dayPass
+          , description = req.body.description;
+
+        var classesObj = req.body;
+
+        if(spots == null) {
+          var spots = 30;
+        }
+
+        getColor(data.gymid,function(cb) {
+          color = cb;
+
+          var statement = [
+            'INSERT INTO classes '
+            , '(gymid,service,image,instructor,duration,price,spots,daypass,`desc`,color) '
+            , 'SELECT ' + data.gymid + ',' + wmysql.escape(service) + ',' + wmysql.escape(instructor) + ',' + wmysql.escape(image) + ',' + duration + ',' + price + ',' + spots + ',' + dayPass + ',' + wmysql.escape(description) + ',"' + color + '"'
+          ].join(" ");
+
+          wmysql.query(statement, function(err, result, fields) {
+            if(err || result.affectedRows < 1) {
+              res.send(400,'{"status": "failed", "message": "insert of class into classes table failed: ' + err + '"}');
+            } else {
+              classesObj.classId = result.insertId;
+              memcached.setMemClass(classId, function(err, cData) { });
+              res.send( classesObj );
+            }
+          });
+        });
       }
     });
-  });*/
+  });
 
 
-  /*app.get('/api/classes/:classId/:datetime/size/', function(req, res){
-    rmysql.query('SELECT sc.spots - COUNT(s.sclassid) AS openSpots,sc.spots AS maxSpots FROM schedule s INNER JOIN scheduledClass sc ON s.sclassid = sc.id WHERE s.sclassid = ' + rmysql.escape(req.params.classId) + ' AND s.datetime = "' + rmysql.escape(req.params.datetime) + '"', function(err, result, fields) {
-      if(err || result.length < 1) {
-        res.send(400,'{"status": "failed", "message": "no class matching id"}');
+  //This used by partner panel only - TESTED
+  app.del('/api/classes/:classId/', function(req, res){
+    try {
+      check(req.header('token')).notNull();
+      check(req.params.classId).isNumeric()
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+      if(err) {
+        res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        res.send(result);
+        var classId = req.params.classId;
+
+        var statement = [
+          'DELETE c FROM classes c '
+          , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
+        ].join(" ");
+
+        wmysql.query(statement, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "No matching class found"}');
+          } else {
+            memcached.remMemKey('c' + classId, function(err, data) { });
+            res.send( '{"classId": ' + classId + '}' );
+          }
+        });
       }
     });
-  });*/
+  });
 
 
+  //This used by provider panel only - TESTED
   app.get('/api/scheduledClasses/', function(req, res) {
     try {
       check(req.header('token')).notNull();
@@ -122,9 +248,8 @@ module.exports = function(app) {
         , end = req.params.end;
       
       var statement = [
-            'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime,c.service '
+            'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime,sc.service '
           , ' FROM scheduledClass sc'
-          , ' INNER JOIN classes c ON sc.classid = c.id'
           , ' WHERE sc.gymid = ' + data.gymid
           , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
           , ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
@@ -135,13 +260,40 @@ module.exports = function(app) {
         if(err) {
           return res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
         } else {
-          res.send(result);
+          res.send( result );
         }
       });
     });
   });
 
 
+  //This used by customer and partner panel - TESTED
+  app.get('/api/scheduledClasses/:classId/', function(req, res) {
+    try {
+      check(req.params.classId).isNumeric();
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+      if(err) {
+        return res.send(401,'{"status": "failed", "message": "invalid token"}');
+      }
+
+      var classId = req.params.classId;
+
+      memcached.isMemScheduledClass(classId, function(err, scdata) {
+        if(err) {
+          return res.send(400,'{"status": "failed", "message":Unable to retrieve class: ' + err + '"');
+        }
+        res.send( scdata.classInfo );
+      });
+    });
+  });
+
+
+  //This used by provider panel only - TESTED
   app.post('/api/scheduledClasses/', function(req, res) {
     try {
       check(req.header('token')).notNull();
@@ -158,8 +310,8 @@ module.exports = function(app) {
 
       var statement = [
           'INSERT INTO scheduledClass '
-        , '(classid,datetime,active,price,gymid,spots,service,instructor,image,daypass) '
-        , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,price,gymid,spots,service,instructor,image,daypass '
+        , '(classid,datetime,active,price,gymid,spots,service,instructor,image,daypass,desc) '
+        , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,price,gymid,spots,service,instructor,image,daypass,desc '
         , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND gymid = ' + data.gymid
         ].join(" ");
 
@@ -168,25 +320,26 @@ module.exports = function(app) {
             res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
           } else {
             classObj.id = result.insertId;
-            setMemScheduledClass(classObj.id,function(err, scData) { });
-            res.send( JSON.stringify(classObj) );
+            memcached.setMemScheduledClass(classObj.id,function(err, scData) { });
+            res.send( classObj );
           }
         });
       }
     }); 
-  });       
+  });
 
 
-  app.get('/api/scheduledClasses/:classId/', function(req, res) {
+  //This used by partner panel only - TESTED
+  app.get('/api/scheduledClasses/:classId/participants/', function(req, res) {
     try {
       check(req.params.classId).isNumeric();
+      check(req.header('token')).notNull();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    
-    memcached.isMemAuth(req.header('token'), function(err,data) {
 
+    memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         return res.send(401,'{"status": "failed", "message": "invalid token"}');
       }
@@ -194,43 +347,17 @@ module.exports = function(app) {
       var classId = req.params.classId;
 
       memcached.isMemScheduledClass(classId, function(err, scdata) {
-         if(err) {
-             return res.send(400,'{"status": "failed", "message":Unable to retrieve class: ' + err + '"');
-         }
-         res.send(scdata.classInfo);
+        if(err) {
+          return res.send(400,'{"status": "failed", "message":Unable to retrieve class: ' + err + '"');
+        }
+        res.send( scdata.participants );
       });
     });
   });
 
 
-    app.get('/api/scheduledClasses/:classId/participants/', function(req, res) {
-        try {
-            check(req.params.classId).isNumeric();
-            check(req.header('token')).notNull();
-        } catch (e) {
-            res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-            return;
-        }
-
-        memcached.isMemAuth(req.header('token'), function(err,data) {
-
-            if(err) {
-                return res.send(401,'{"status": "failed", "message": "invalid token"}');
-            }
-
-            var classId = req.params.classId;
-
-            memcached.isMemScheduledClass(classId, function(err, scdata) {
-                if(err) {
-                    return res.send(400,'{"status": "failed", "message":Unable to retrieve class: ' + err + '"');
-                }
-                res.send(scdata.participants);
-            });
-        });
-    });
-
-
-  app.put('/api/classes/:classId/participants/:participantId/', function(req, res) {
+  //This used by partner panel only - TESTED
+  app.put('/api/scheduledClasses/:classId/participants/:participantId/', function(req, res) {
     try {
       check(req.params.participantId).isNumeric();
       check(req.header('token')).notNull();
@@ -260,7 +387,7 @@ module.exports = function(app) {
         if(err) {
           res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
         } else {
-          setMemScheduledClass(particObj.classId,function(err, scData) { });
+          memcached.setMemScheduledClass(particObj.classId,function(err, scData) { });
           res.send( particObj );
         }
       });
@@ -268,95 +395,8 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/classes/', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-    } catch (e) {
-      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        var cid = 0
-        , color = ""
-        , service = req.body.service
-        , image = req.body.image
-        , duration = req.body.duration
-        , price = req.body.price
-        , spots = req.body.spots
-        , description = req.body.description;
-        
-        if(spots == null) {
-          var spots = 30;
-        } 
-
-        var statement = [
-              'INSERT INTO classes '
-            , '(gymid,service,image,duration,price,spots,`desc`,color) '
-            , 'SELECT ' + data.gymid + ',' + wmysql.escape(service) + ',' + wmysql.escape(image) + ',' + duration + ',' + price + ',' + spots + ',' + wmysql.escape(description) + ',"' + color + '"'
-        ].join(" ");
-
-        var statement2 = [
-              'INSERT INTO classTimes (classid,gymid,weekday,time) '
-            , 'SELECT ' + classId + ',' + data.gymid + ',' + wmysql.escape(key) + ',' + wmysql.escape(time)
-        ].join(" ");
-
-        getColor(wmysql.escape(req.header('token')),function(cb) {
-          color = cb;
-          wmysql.query(statement, function(err, result, fields) {
-           if(err || result.affectedRows < 1) {
-              res.send(400,'{"status": "failed", "message": "insert of class into classes table failed: ' + err + '"}');
-            } else {
-              classId = result.insertId;
-              var keys = Object.keys( req.body.days );
-              keys.forEach(function(key) {
-              req.body.days[key].forEach(function(time) {
-                  wmysql.query(statement2, function(err, result, fields) {
-                    if(err || result.affectedRows < 1) {
-                      res.send(400,'{"status": "failed", "message": "insert of class into classTimes table failed: ' + err + '"}');
-                    }     
-                  });
-                });
-              });
-              res.send('{"classId": "' + classId + '"}');
-            }
-          });
-        });
-      }
-    });
-  });
-
-
-  app.get('/api/classes/:classId/', function(req, res){
-    try {
-      check(req.params.classId).isNumeric() 
-    } catch (e) {
-      res.send('{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-
-    var classId = req.params.classId;
-
-    var statement = [
-          'SELECT c.id,c.gymid,c.service,c.duration,c.price,c.spots,c.instructor'
-        , ',c.desc,g.address,g.city,g.state,g.zipcode,g.phone ',
-        , 'FROM classes c INNER JOIN gyms g ON c.gymid = g.id INNER JOIN hours h ON g.id = h.gymid '
-        , 'WHERE c.id = ' + classId
-    ].join(" ");
-
-    rmysql.query(statement, function(err, result, fields) {
-     if(err) {
-        res.send('{"status": "failed", "message": "sql error occured: ' + err + '"}');
-      } else {
-        res.send(result);
-      }
-    });
-  });
-
-
-  app.get('/api/classes/:classId/scheduledClasses/', function(req, res){
+  //This used by customers only - WORK IN PROGRESS
+  /*app.get('/api/classes/:classId/scheduledClasses/', function(req, res){
     try {
       check(req.params.classId).isNumeric() 
     } catch (e) {
@@ -379,113 +419,16 @@ module.exports = function(app) {
       } else {
         res.send(result);
       }
-    });*/
-  });
-
-
-  app.put('/api/classes/:classId/', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-      check(req.body.price).len(1,7).isDecimal();
-      check(req.body.duration).isNumeric();
-      check(req.params.classId).isNumeric();
-    } catch (e) {
-      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {
-        var classId = req.params.classId
-        , service = req.body.service
-        , image = req.body.image
-        , duration = req.body.duration
-        , spots = req.body.spots
-        , price = req.body.price
-        , description = req.body.description
-        , days = req.body.days;
-
-        if(spots == null) {
-          var spots = 30;
-        } 
-
-        var statement = [
-              'UPDATE classes c '
-            , 'SET service = ' + wmysql.escape(service) + ',image = ' + wmysql.escape(image) + ',instructor = ' + wmysql.escape(instructor) + ' '
-            , 'duration = ' + duration + ',price = ' + price + ',spots = ' + spots + ',`desc` = ' + wmysql.escape(description) + ' '
-            , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
-        ].join(" ");
-
-        var statement2 = [
-              'DELETE FROM classTimes '
-            , 'WHERE classid = ' + classId
-        ].join(" ");
-
-        var statement3 = [
-              'INSERT INTO classTimes (classid,gymid,weekday,time) '
-            , 'SELECT ' + classId + ',' + data.gymid + ',' + wmysql.escape(key) + ',' + wmysql.escape(time)
-        ].join(" ");
-
-        wmysql.query(statement, function(err, result, fields) {
-         if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
-          } else {
-            wmysql.query(statement2);
-            var keys = Object.keys( days );
-            keys.forEach(function(key) {
-            req.body.days[key].forEach(function(time) {
-                wmysql.query(statement3, function(err, result, fields) {
-                  if(err || result.affectedRows < 1) {
-                    res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
-                  }     
-                });
-              });
-            });
-            res.send('{"classId": "' + classId + '"}');
-          }
-        });
-      }
     });
-  });
+  });*/
 
 
-  app.del('/api/classes/:classId/', function(req, res){  
-    try {
-      check(req.header('token')).notNull();
-      check(req.params.classId).isNumeric()
-    } catch (e) {
-      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {
-        var classId = req.body.classId;
-
-        var statement = [
-              'DELETE c FROM classes c '
-            , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
-        ].join(" ");
-
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
-          } else {
-            res.send(result);
-          }
-        });
-      }
-    });
-  });  
-
-
+  //This used by partner panel only - TESTED
   app.put('/api/scheduledClasses/:classId/', function(req, res) {
     try {
       check(req.header('token')).notNull();
       check(req.params.classId).isNumeric();
-      check(req.body.price).isDecimal();
+      check(req.body.price).len(1,7).isDecimal();
       check(req.body.spots).isNumeric();
       check(req.body.active).isNumeric();
     } catch (e) {
@@ -497,157 +440,27 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
 
-        var classId = req.body.classId
+        var classId = req.params.classId
         , price = req.body.price
         , spots = req.body.spots
-        , datetime = req.body.datetime
+        , instructor = req.body.instructor
         , active = req.body.active;
 
         var statement = [
               'UPDATE scheduledClass sc '
-            , 'SET datetime = ' + datetime + ',spots = ' + spots + ',price = ' + price + ',active = ' + active + ' '
-            , 'WHERE sc.classid = ' + classId + ' AND sc.gymid = ' + data.gymid
+            , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ',active = ' + active + ' '
+            , 'WHERE sc.id = ' + classId + ' AND sc.gymid = ' + data.gymid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
           } else {
-            setMemScheduledClass(classId,function(err, scData) { });
-            res.send(result);
+            memcached.setMemScheduledClass(classId,function(err, scData) { });
+            res.send( req.body );
           }
         }); 
       }
     });
   });
-
-
-  /*app.put('/api/scheduledClasses/:classId/cancel/', function(req, res) {
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-
-        var classId = req.body.classId
-        , datetime = req.body.datetime;
-
-        var statement = [
-              'UPDATE scheduledClass sc '
-            , 'SET active = 0 '
-            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + wmysql.escape(datetime) + ' AND sc.gymid = ' + data.gymid
-        ].join(" ");
-
-        wmysql.query(statement, function(err, result, fields) {
-          if(err) {
-            res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
-          } else {
-
-            res.send(result);
-          }
-        }); 
-      }
-    });
-  });
-
-
-  app.put('/api/scheduledClasses/:classId/revive/', function(req, res) {
-    try {
-      check(req.header('token')).notNull();
-      check(req.params.classId).isNumeric();
-    } catch (e) {
-      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-
-        var classId = req.params.classId
-        , datetime = req.body.datetime;
-
-        var statement = [
-              'UPDATE scheduledClass sc '
-            , 'SET active = 1 '
-            , 'WHERE sc.classid = ' + classId + ' AND sc.datetime = ' + wmysql.escape(datetime) + ' AND sc.gymid = ' + data.gymid
-        ].join(" ");
-
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "unable to revive"}');
-          } else {
-            res.send(result);
-          }
-        }); 
-      }
-    });
-  });*/
-
-
-  /*app.get('/api/userSCID/', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-    } catch (e) {
-      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    rmysql.query('SELECT s.sclassid FROM schedule s INNER JOIN users u ON s.userid = u.id WHERE u.`' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-      if(err || result.length < 1) {
-        res.send(400,'{"status": "failed", "message": "unable to retreive"}');
-      } else {
-        res.send(result);
-      }
-    });
-  });*/
-
-
-  /*app.get('/api/SCIDs/:start/:end', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-      check(req.params.classid).isNumeric();
-      check(req.params.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
-      check(req.params.end).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
-    } catch (e) {
-      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        rmysql.query('SELECT sc.id AS sid,sc.classid as cid,sc.datetime,sc.price,sc.spots,sc.active FROM scheduledClass sc WHERE sc.datetime >= ' + rmysql.escape(req.params.start) + ' AND sc.datetime < ' + rmysql.escape(req.params.end) + ' AND sc.gymid = ' + data.gymid, function(err, result, fields) {
-          if(err || result.length < 1) {
-            res.send(400,'{"status": "failed", "message": "no matching results"}');
-          } else {
-            res.send(result);
-          }
-        });
-      }
-    });
-  });*/
-
-
-  /*app.get('/api/:classId/SCID/:start', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-      check(req.params.classId).isNumeric();
-      check(req.params.start).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i)
-    } catch (e) {
-      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        rmysql.query('SELECT sc.id FROM scheduledClass sc WHERE classid = ' + rmysql.escape(req.params.classId) + ' AND datetime = ' + rmysql.escape(req.params.datetime) + ' AND sc.gymid = ' + data.gymid, function(err, result, fields) {
-          if(err || result.length < 1) {
-            res.send(400,'{"status": "failed", "message": "unable to retreive"}');
-          } else {
-            res.send(result);
-          }
-        });
-      }
-    });
-  });*/
 }
