@@ -62,7 +62,8 @@ module.exports = function(app) {
     ].join(" ");
 
     rmysql.query( util.format(statement, wmysql.escape(username), wmysql.escape(password)), function(err, result, fields) {
-      if(result.length > 0){
+      console.log(result)
+      if(result && result.length > 0){
         
         var gymid = result[0].gymid
         , name = result[0].name
@@ -117,12 +118,13 @@ module.exports = function(app) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
           } else {
             memcached.remMemKey(req.header('token'));
-            res.send(result);
+            res.send( result );
           }
         });
       }
     });
   });
+
 
   app.post('/api/provider/:providerId/imageUpdate/', function(req, res){
     try {
@@ -247,7 +249,7 @@ module.exports = function(app) {
                           if(err)
                             res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
                           else   
-                            res.send(result);
+                            res.send( result );
                         });
                       } else { 
                         p.loc.lat = lat;
@@ -256,7 +258,7 @@ module.exports = function(app) {
                           if(err) 
                             res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
                           else
-                            res.send(result);
+                            res.send( result );
                         });
                       }
                     });
@@ -301,7 +303,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
@@ -342,7 +344,7 @@ module.exports = function(app) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
               } else {
-                res.send(result);
+                res.send( result );
               }
             });
           } else {
@@ -379,7 +381,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
@@ -407,39 +409,15 @@ module.exports = function(app) {
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
-          if(err || result.length < 1) {
+          if(err || !result) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve balance"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
     });
   });
-
-
-  /*app.post('/api/gymSchedule/', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-
-    } catch (e) {
-      res.send('{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {
-        rmysql.query('SELECT c.id,ct.weekday,ct.time,c.service,c.duration,c.spots from classes c INNER JOIN classTimes ct ON c.id = ct.classid INNER JOIN gymUsers gu ON c.gymid = gu.gymid WHERE g.id = ' + data.gymid + ' ORDER BY FIELD(weekday,"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")', function(err, result, fields) {
-          if(err || result.length < 1) {
-            res.send(400,'{"status": "failed", "message": "unable to retrieve schedule"}');
-          } else {
-            res.send(result);
-          }
-        });
-      }
-    });
-  });*/
 
   
   app.get('/api/provider/:providerId/disbursement/', function(req, res){
@@ -461,16 +439,15 @@ module.exports = function(app) {
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
-          if (err || result.length < 1) {
+          if (err || !result) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve disbursement"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
     });
   });
-
 
 
   app.put('/api/provider/:providerId/disbursement/', function(req, res){
@@ -499,86 +476,14 @@ module.exports = function(app) {
             , 'WHERE ' + data.groupid + ' = 1 AND d.gymid = ' + data.gymid
         ].join(" ");
 
-
         wmysql.query(statement, function(err, result, fields) {
           if (err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "update to disbursement row failed"}');
           } else {
-            res.send(result);
+            res.send( result );
           }
         });
       }
     });
-  });
-
-
-  /*app.get('/api/getTags/:gid', function(req, res){
-    rmysql.query('SELECT id,tag FROM gymTags WHERE gymid = ' + req.params.gid, function(err, result, fields) {
-      if(err || result.length < 1) {
-        res.send('{"status": "failed", "message":"unable to retrieve tags"}');
-      } else {
-        res.send(result);
-      }
-    });  
-  });
-
-
-  app.post('/api/addTag/', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-      check(req.body.gymid).isNumeric();
-      check(req.body.tag).isAlphanumeric(); 
-    } catch (e) {
-      res.send('{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {
-        wmysql.query('INSERT INTO gymTags (gymid,tag) VALUES (' + wmysql.escape(req.body.gymid) + ',' + wmysql.escape(req.body.tag) + ')', function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message":"insert of tag row failed"}');
-          } else {
-            res.send('{"tid": "' + result.insertId + '"}');
-          }
-        });
-      }
-    });
-  });
-
-
-  app.del('/api/deleteTag/', function(req, res){
-    try {
-      check(req.header('token')).notNull();
-      check(req.body.tid).isNumeric() 
-    } catch (e) {
-      res.send('{"status": "failed", "message":"' + e.message + '"}');
-      return;
-    }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {
-        wmysql.query('DELETE FROM gymTags WHERE id = ' + req.body.tid, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message":"unable to delete tag"}');
-          } else {
-            res.send(result);
-          }
-        });
-      }
-    });
-  });*/  
-
-
-  /*app.get('/api/paymentMethods/', function(req, res){
-    rmysql.query('SELECT id,type FROM paymentmethod', function(err, result, fields) {
-      if (err || result.length < 1) {
-        res.send(400,'{"status": "failed", "message": "unable to retreive payment methods"}');
-      } else {
-        res.send(result);
-      }
-    });
-  });*/  
+  });  
 }

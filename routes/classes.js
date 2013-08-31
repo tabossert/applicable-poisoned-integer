@@ -244,18 +244,18 @@ module.exports = function(app) {
         return res.send(401,'{"status": "failed", "message": "invalid token"}');
       }
 
-      var start = req.params.start
-        , end = req.params.end;
+      var start = req.query.start
+        , end = req.query.end;
       
       var statement = [
             'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime,sc.service '
-          , ' FROM scheduledClass sc'
-          , ' WHERE sc.gymid = ' + data.gymid
+          , 'FROM scheduledClass sc '
+          , 'WHERE sc.gymid = ' + data.gymid
           , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
           , ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
           , ' ORDER BY sc.datetime'
           ].join(" ");
-    
+      
       rmysql.query(statement, function(err, result, fields) {
         if(err) {
           return res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
@@ -306,6 +306,7 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
+      console.log("gym " + data)
       var classObj = req.body;
 
       var statement = [
@@ -408,8 +409,8 @@ module.exports = function(app) {
     var scArr = [];
 
     memcached.isMemClass(classId, function(err, data) {
-      if (err || !data) {
-        res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      if (err || data.scheduledClasses.length < 1) {
+        res.send(400,'{"status": "failed", "message":"no scheduled classes found matching this classId"}');
       }
       var dataLen = data.scheduledClasses.length;
       var i = 0;
