@@ -408,8 +408,8 @@ module.exports = function(app) {
     var scArr = [];
 
     memcached.isMemClass(classId, function(err, data) {
-      if (err || !data) {
-        res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      if (err || data.scheduledClasses.length < 1) {
+        res.send(400,'{"status": "failed", "message":"no scheduled classes found matching this classId"}');
       }
       var dataLen = data.scheduledClasses.length;
       var i = 0;
