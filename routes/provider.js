@@ -2,9 +2,6 @@
  *  Routes related to providers
  */
 
-//TODO
-//change some get calls to use elasticsearch and memcache
-
 var config = config = require('config')
   , moment = require('moment')
   , fs = require("fs")
@@ -37,21 +34,8 @@ var CFcontainer = config.CloudFiles.CFcontainer;
 var CFclient = cloudfiles.createClient(CFconfig);
 
 var memcached = require('../lib/memcached');
-var es = require('../lib/elasticsearch');
 
 module.exports = function(app) {
-
-  /*es.indexProvider(22,function(err, obj) {
-    //console.log(obj);
-    //console.log(err);
-  });
-  
-  keywords = ['yoga', 'karate'];
-
-  es.search(keywords,'100',37.88,-122.05,function(err,data) {
-    //console.log(err)
-    console.log(data.hits.hits[0]._id)
-  });*/
 
   app.put('/api/provider/login/', function(req, res){
     
@@ -83,6 +67,11 @@ module.exports = function(app) {
         var gymid = result[0].gymid
         , name = result[0].name
         , id = result[0].id;
+
+        var providerObj = {};
+        providerObj.employeeId = id;
+        providerObj.name = name;
+        providerObj.providerId = gymid;
         
         require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
@@ -93,8 +82,9 @@ module.exports = function(app) {
             if(err || result.affectedRows < 1) {
               res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
             } else {
+              providerObj.token = token;
               memcached.setMemAuth(token, function(err, data) {});
-              res.send('{"gymid": "' + gymid + '", "name": "' + name + '", "token": "' + token + '"}');
+              res.send( JSON.stringify(providerObj) );
             }
           });
         });
@@ -105,7 +95,7 @@ module.exports = function(app) {
   });
 
 
-  app.put('/api/provider/:providerId/logout/', function(req, res){
+  app.put('/api/provider/logout/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -115,9 +105,7 @@ module.exports = function(app) {
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {
-
-        var providerId = req.params.providerId;
+      } else { 
 
         var statement = [
               'UPDATE gymUsers SET token = null '
@@ -129,14 +117,14 @@ module.exports = function(app) {
             res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
           } else {
             memcached.remMemKey(req.header('token'));
-            res.send( '{"providerId": ' + providerId + '}' );
+            res.send(result);
           }
         });
       }
     });
   });
 
-  app.put('/api/provider/:providerId/imageUpdate/', function(req, res){
+  app.post('/api/provider/:providerId/imageUpdate/', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.params.providerId).isNumeric();
@@ -154,19 +142,17 @@ module.exports = function(app) {
         var iName = req.body.iName
         , image = req.body.image;
 
-        var imageObj = req.body;
-
         var statement = [
               'UPDATE gyms g SET g.image = ' + wmysql.escape(CFcontainer + iName) + ' '
             , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
         ].join(" ");
 
-        fs.writeFile('images/' + iName, new Buffer(image, "base64"), function(err) {
+        fs.writeFile('images/' + req.body.iName, new Buffer(req.body.image, "base64"), function(err) {
           CFclient.setAuth(function (err) {
             if(err) {
               res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
             } else {
-              CFclient.addFile('gymImages', { remote: iName, local: 'images/' + iName }, function (err, uploaded) {
+              CFclient.addFile('gymImages', { remote: req.body.iName, local: 'images/' + req.body.iName }, function (err, uploaded) {
                 if(err) {
                   res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
                 } else {
@@ -174,9 +160,7 @@ module.exports = function(app) {
                     if(err || result.affectedRows < 1) {
                       res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
                     } else {
-                      imageObj.path = CFcontainer + iName;
-                      es.indexProvider(data.gymid,function(err, obj) { });
-                      res.send( imageObj );
+                      res.send('{"path": "' + CFcontainer + req.body.iName + '"}');
                     }
                   });
                 }
@@ -189,7 +173,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:providerId/', function(req, res){
+  app.post('/api/provider/:providerId', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.params.providerId).isNumeric();
@@ -231,11 +215,9 @@ module.exports = function(app) {
         , sundayOpen = req.body.sundayOpen
         , sundayClose = req.body.sundayClose;
 
-        var providerObj = req.body;
-
         var statement = [
               'UPDATE gyms g set g.name = ' + wmysql.escape(name) + ',g.address = ' + wmysql.escape(address) + ',g.city = ' + wmysql.escape(city) + ','
-            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + 'g.lat = %s,g.lon = %s,g.phone = ' + wmysql.escape(phone) + ','
+            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + ',g.phone = ' + wmysql.escape(phone) + ','
             , 'g.email = ' + wmysql.escape(email) + ',g.contact = ' + wmysql.escape(contact) + ',g.facebook = ' + wmysql.escape(facebook) + ','
             , 'g.twitter = ' + wmysql.escape(twitter) + ',g.googleplus = ' + wmysql.escape(googleplus) + ',g.url = ' + wmysql.escape(url) + ',g.complete = true '
             , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
@@ -249,25 +231,38 @@ module.exports = function(app) {
             , 'WHERE ' + data.groupid + ' = 1 AND h.gymid = ' + data.gymid
         ].join(" ");        
 
-        geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lat,lon,details) {
-          if(lat) {
-            wmysql.query(util.format(statement, lat, lon), function(err, result, fields) {
-              if(err || result.affectedRows < 1) {
-                res.send(400,'{"status": "failed", "message": "update to provider table failed"}');
-              }
-            });
-          } else {
-            res.send(400,'{"status": "failed", "message": "update to convert address to cordinates"}');
-          }
-        });
-
-        wmysql.query(statement2, function(err, result, fields) {
+        wmysql.query(statement, function(err, result, fields) {
           if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
+            res.send(400,'{"status": "failed", "message": "update to row failed"}');
           } else {
-            es.indexProvider(data.gymid,function(err, obj) { });
-            providerObj.providerId = result.insertId;
-            res.send( providerObj );
+            wmysql.query(statement2, function(err, result, fields) {
+              if(err || result.affectedRows < 1) {
+                res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
+              } else {
+                geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lng,lat) {
+                  cordinatesModel.findOne({gymid: providerId}, function(err, p) {
+                    if(!p) {
+                      var gymLoc = new cordinatesModel({ gymid: providerId, loc: {lat: lat, lng: lng }});
+                        gymLoc.save(function (err) {
+                          if(err)
+                            res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
+                          else   
+                            res.send(result);
+                        });
+                      } else { 
+                        p.loc.lat = lat;
+                        p.loc.lng = lng;  
+                        p.save(function(err) {
+                          if(err) 
+                            res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
+                          else
+                            res.send(result);
+                        });
+                      }
+                    });
+                  });
+                } 
+            });
           } 
         });
       }
@@ -290,34 +285,31 @@ module.exports = function(app) {
       } else { 
         require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+        });
 
-          var username = req.body.username
-          , firstName = req.body.firstName
-          , lastName = req.body.lastName;
+        var username = req.body.username
+        , firstName = req.body.firstName
+        , lastName = req.body.lastName;
 
-          var empObj = req.body;
+        var statement = [
+              'INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) '
+            , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
+            , 'FROM gyms g WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
+        ].join(" ");
 
-          var statement = [
-                'INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) '
-              , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
-              , 'FROM gyms g WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
-          ].join(" ");
-
-          wmysql.query(statement, function(err, result, fields) {
-            if(err || result.affectedRows < 1) {
-              res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
-            } else {
-              empObj.employeeId = result.insertId;
-              res.send( empObj );
-            }
-          });
+        wmysql.query(statement, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
+          } else {
+            res.send(result);
+          }
         });
       }
     });
   });
 
 
-  app.put('/api/provider/:providerId/employee/:employeeId/updatePassword/', function(req, res) {
+  app.put('/api/provider/:providerId/employee/:employeemployeeId/updatePassword/', function(req, res) {
     try {
       check(req.header('token')).notNull();
       check(req.params.providerId).isNumeric();
@@ -331,9 +323,7 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {   
 
-        var providerId = req.params.providerId
-        , employeeId = req.params.employeeId
-        , npass = req.body.npass
+        var npass = req.body.npass
         , cpass = req.body.cpass;
 
         var statement = [
@@ -342,17 +332,17 @@ module.exports = function(app) {
         ].join(" ");
 
         var statement2 = [
-              'UPDATE gymUsers SET password = ' + wmysql.escape(npass) + ' '
+              'UPDATE gymUsers SET password = ' + wmysql.escape(req.body.npass) + ' '
             , 'WHERE id = ' + data.id
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
-          if(result.password == cpass) {
+          if(result.password == req.body.cpass) {
             wmysql.query(statement2, function(err, result, fields) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
               } else {
-                res.send( '{"employeeId": ' + employeeId + '}' );
+                res.send(result);
               }
             });
           } else {
@@ -389,7 +379,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
           } else {
-            res.send( '{"employeeId": ' + employeeId + '}' );
+            res.send(result);
           }
         });
       }
@@ -417,10 +407,10 @@ module.exports = function(app) {
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
-          if(err || !result) {
+          if(err || result.length < 1) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve balance"}');
           } else {
-            res.send( result );
+            res.send(result);
           }
         });
       }
@@ -474,7 +464,7 @@ module.exports = function(app) {
           if (err || result.length < 1) {
             res.send(400,'{"status": "failed", "message": "unable to retrieve disbursement"}');
           } else {
-            res.send( result );
+            res.send(result);
           }
         });
       }
@@ -503,8 +493,6 @@ module.exports = function(app) {
         , paylimit = req.body.paylimit
         , type = req.body.type;
 
-        var disbObj = req.body;
-
         var statement = [
               'UPDATE disbursement d '
             , 'SET d.paymenttype = ' + paymenttype + ',d.paylimit = ' + paylimit + ',d.type = ' + type + ' '
@@ -516,7 +504,7 @@ module.exports = function(app) {
           if (err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "update to disbursement row failed"}');
           } else {
-            res.send( disbObj );
+            res.send(result);
           }
         });
       }
