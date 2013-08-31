@@ -395,8 +395,8 @@ module.exports = function(app) {
   });
 
 
-  //This used by customers only - WORK IN PROGRESS
-  /*app.get('/api/classes/:classId/scheduledClasses/', function(req, res){
+  //This used by customers only - TESTED
+  app.get('/api/classes/:classId/scheduledClasses/', function(req, res){
     try {
       check(req.params.classId).isNumeric() 
     } catch (e) {
@@ -405,22 +405,25 @@ module.exports = function(app) {
     }
 
     var classId = req.params.classId;
+    var scArr = [];
 
-    /*var statement = [
-          'SELECT weekday,GROUP_CONCAT(time) AS time ',
-        , 'FROM classTimes '
-        , 'WHERE classid = ' + classId + ' GROUP BY'
-        , ' weekday ORDER BY FIELD(weekday,"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")'  
-    ].join(" ");
-
-    rmysql.query(statement, function(err, result, fields) {
-      if(err) {
-        res.send('{"status": "failed", "message": "sql error occured: ' + err + '"}');
-      } else {
-        res.send(result);
+    memcached.isMemClass(classId, function(err, data) {
+      if (err || !data) {
+        res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       }
+      var dataLen = data.scheduledClasses.length;
+      var i = 0;
+      data.scheduledClasses.forEach(function(classId) {
+        memcached.isMemScheduledClass(classId.id, function(err, scData) {
+          scArr.push(scData.classInfo);
+          i = i + 1;
+          if(dataLen == i) {
+            res.send( scArr )
+          }
+        });
+      });
     });
-  });*/
+  });
 
 
   //This used by partner panel only - TESTED
