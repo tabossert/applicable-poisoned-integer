@@ -37,7 +37,7 @@ var memcached = require('../lib/memcached');
 
 module.exports = function(app) {
 
-  app.post('/api/provider/login/', function(req, res){
+  app.put('/api/provider/login/', function(req, res){
     
     var username = req.body.username
     , password = req.body.password;
@@ -67,6 +67,11 @@ module.exports = function(app) {
         var gymid = result[0].gymid
         , name = result[0].name
         , id = result[0].id;
+
+        var providerObj = {};
+        providerObj.employeeId = id;
+        providerObj.name = name;
+        providerObj.providerId = gymid;
         
         require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
@@ -77,8 +82,9 @@ module.exports = function(app) {
             if(err || result.affectedRows < 1) {
               res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
             } else {
+              providerObj.token = token;
               memcached.setMemAuth(token, function(err, data) {});
-              res.send('{"gymid": "' + gymid + '", "name": "' + name + '", "token": "' + token + '"}');
+              res.send( JSON.stringify(providerObj) );
             }
           });
         });
@@ -89,7 +95,7 @@ module.exports = function(app) {
   });
 
 
-  app.get('/api/provider/logout/', function(req, res){
+  app.put('/api/provider/logout/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -167,7 +173,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:providerId/', function(req, res){
+  app.post('/api/provider/:providerId', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.params.providerId).isNumeric();

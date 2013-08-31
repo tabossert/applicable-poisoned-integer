@@ -67,7 +67,7 @@ module.exports = function(app) {
 
 
   //This used by customer and partner panel - TESTED
-  app.get('/api/classes/:classId/', function(req, res){
+  app.get('/api/classes/:classId', function(req, res){
     try {
       check(req.params.classId).isNumeric()
     } catch (e) {
@@ -88,7 +88,7 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.put('/api/classes/:classId/', function(req, res){
+  app.put('/api/classes/:classId', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.body.duration).isNumeric();
@@ -198,7 +198,7 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.del('/api/classes/:classId/', function(req, res){
+  app.del('/api/classes/:classId', function(req, res){
     try {
       check(req.header('token')).notNull();
       check(req.params.classId).isNumeric()
@@ -268,7 +268,7 @@ module.exports = function(app) {
 
 
   //This used by customer and partner panel - TESTED
-  app.get('/api/scheduledClasses/:classId/', function(req, res) {
+  app.get('/api/scheduledClasses/:classId', function(req, res) {
     try {
       check(req.params.classId).isNumeric();
     } catch (e) {
@@ -357,7 +357,7 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.put('/api/scheduledClasses/:classId/participants/:participantId/', function(req, res) {
+  app.put('/api/scheduledClasses/:classId/participants/:participantId', function(req, res) {
     try {
       check(req.params.participantId).isNumeric();
       check(req.header('token')).notNull();
@@ -424,7 +424,7 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.put('/api/scheduledClasses/:classId/', function(req, res) {
+  app.put('/api/scheduledClasses/:classId', function(req, res) {
     try {
       check(req.header('token')).notNull();
       check(req.params.classId).isNumeric();
