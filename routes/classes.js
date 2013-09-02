@@ -248,7 +248,7 @@ module.exports = function(app) {
         , end = req.query.end;
       
       var statement = [
-            'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime '
+            'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime,sc.service'
           , 'FROM scheduledClass sc '
           , 'WHERE sc.gymid = ' + data.gymid
           , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
