@@ -15,7 +15,7 @@ var config = config = require('config')
   , check = require('validator').check
   , sanitize = require('validator').sanitize
 
-var dbConn = require('../mysqlConn');
+var dbConn = require('../lib/mysqlConn');
 var rmysql = dbConn.rmysql;
 var wmysql = dbConn.wmysql;
 var amysql = dbConn.amysql;

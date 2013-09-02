@@ -3,7 +3,7 @@
  */
 
 var config = config = require('config'); 
-var dbConn = require('../mysqlConn');
+var dbConn = require('../lib/mysqlConn');
 var rmysql = dbConn.rmysql;
 var wmysql = dbConn.wmysql;
 var amysql = dbConn.amysql;

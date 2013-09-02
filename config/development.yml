@@ -1,3 +1,6 @@
+Node:
+  workers: 1
+
 Express:
   http: 9090
   https: 9443

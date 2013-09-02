@@ -22,7 +22,7 @@ var express = require('express')
   , expressWinston = require('express-winston')
   , winston = require('winston')
   , config = require('config')
-  , dbConn = require('./mysqlConn')
+  , dbConn = require('./lib/mysqlConn')
   , rmysql = dbConn.rmysql
   , wmysql = dbConn.wmysql
   , amysql = dbConn.amysql;
@@ -139,11 +139,11 @@ app.get('/api/healthMe/', function(req, res){
 //Set Cluster setting for workers
 var cluster = require('cluster');
 var http = require('http');
-var numCPUs = require('os').cpus().length;
+var numCPUs = config.Node.workers;
 
 if (cluster.isMaster) {
   // Fork workers.
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
 
