@@ -30,6 +30,13 @@ gpgcheck=1
 - mysql -u root fitstew < fitstew_2013-07-26.sql      (File is in sql/backups/ in the code base)
 - mysql -u root barbell < barbell_2013-07-26.sql      (File is in sql/backups/ in the code base)
 
+If Reloading Database from schema file
+mysql -u root
+DROP DATABASE fitstew;
+CREATE DATABASE fitstew;
+exit
+mysql -u root  fitstew < fitstew_2013-09-01.sql
+
 ## Node Setup ##
 - yum -y groupinstall 'Development Tools'
 - mkdir ~/sources
