@@ -359,6 +359,7 @@ module.exports = function(app) {
 
   //This used by partner panel only - TESTED
   app.put('/api/scheduledClasses/:classId/participants/:participantId', function(req, res) {
+    
     try {
       check(req.params.participantId).isNumeric();
       check(req.header('token')).notNull();
@@ -374,13 +375,26 @@ module.exports = function(app) {
     
       var participantId = req.params.participantId;
 
-      var particObj = {};
-      particObj.classId = req.params.classId;
-      particObj.participantId = req.params.participantId;
-
+      var particObj = {
+          classId: req.params.classId,
+          participantId: req.params.participantId,
+          id: req.params.participantId,
+          
+          checkin: parseInt(req.body.checkin, 10)
+        };
+      
+      console.log("partic obj = ", particObj);
+      
+      if (particObj.checkin !== 0 && particObj.checkin !== 1) {
+        // invalid checkin value, don't update.
+        delete particObj.checkin;
+      }
+      
       var statement = [
           'UPDATE schedule s  '
-        , 'SET s.checkin = 1 XOR s.checkin, s.chkintime = NOW() '
+        , 'SET '
+        , (particObj.checkin) ? 's.checkin = ' + particObj.checkin + ',' : ''
+        , 's.chkintime = NOW() '
         , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND s.gymid = ' + data.gymid
         ].join(" ");
       
