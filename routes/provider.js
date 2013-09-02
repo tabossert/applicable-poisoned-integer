@@ -37,7 +37,7 @@ var memcached = require('../lib/memcached');
 
 module.exports = function(app) {
 
-  app.put('/api/provider/login/', function(req, res){
+  var login = function(req, res){
     
     var username = req.body.username
     , password = req.body.password;
@@ -93,10 +93,14 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "username and password does not match any existing record"}');
        }
      });
+  };
+  
+  ['put', 'post'].forEach(function (method) {
+    app[method]('/api/provider/login/', login);
   });
 
 
-  app.put('/api/provider/logout/', function(req, res){
+  var logout = function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -123,6 +127,10 @@ module.exports = function(app) {
         });
       }
     });
+  };
+  
+  ['put', 'post'].forEach(function (method) {
+    app[method]('/api/provider/logout/', logout);
   });
 
 
