@@ -393,7 +393,7 @@ module.exports = function(app) {
       var statement = [
           'UPDATE schedule s  '
         , 'SET '
-        , (particObj.checkin) ? 's.checkin = ' + particObj.checkin + ',' : ''
+        , (particObj.checkin) >= 0 ? 's.checkin = ' + particObj.checkin + ',' : ''
         , 's.chkintime = NOW() '
         , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND s.gymid = ' + data.gymid
         ].join(" ");
