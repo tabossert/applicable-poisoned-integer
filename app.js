@@ -23,6 +23,7 @@ var express = require('express')
   , winston = require('winston')
   , config = require('config')
   , dbConn = require('./lib/mysqlConn')
+  , errMsg = require('./lib/errMsg')
   , rmysql = dbConn.rmysql
   , wmysql = dbConn.wmysql
   , amysql = dbConn.amysql;

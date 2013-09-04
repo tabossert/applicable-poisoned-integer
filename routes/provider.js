@@ -10,6 +10,7 @@ var config = config = require('config')
   , mongoose = require("mongoose")
   , check = require('validator').check
   , sanitize = require('validator').sanitize
+  , errMsg = require('../lib/errMsg')
   , util = require('util');
 
 // API config settings
@@ -43,7 +44,7 @@ module.exports = function(app) {
     , password = req.body.password;
     
     try {
-      check(username).isEmail();
+      check(username, errMsg.emailErr).isEmail();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -102,7 +103,7 @@ module.exports = function(app) {
 
   var logout = function(req, res){
     try {
-      check(req.header('token')).notNull();
+      check(req.header('token'),errMsg.tokenErr).notNull();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -136,8 +137,8 @@ module.exports = function(app) {
 
   app.post('/api/provider/:providerId/imageUpdate/', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
       check(req.body.image).notNull(); 
       check(req.body.iName).isAlphanumeric(); 
     } catch (e) {
@@ -185,9 +186,9 @@ module.exports = function(app) {
 
   app.post('/api/provider/:providerId', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
-      check(req.body.zipcode).len(5,5).isNumeric()  
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
+      check(req.body.zipcode, errMsg.zipcodeErr).len(5,5).isNumeric()  
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -282,9 +283,9 @@ module.exports = function(app) {
 
   app.post('/api/provider/:providerId/employee/', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
-      check(req.body.username).len(1,12).isAlphanumeric()
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
+      check(req.body.username, errMsg.emailErr).isEmail();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -321,9 +322,9 @@ module.exports = function(app) {
 
   app.put('/api/provider/:providerId/employee/:employeemployeeId/updatePassword/', function(req, res) {
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
-      check(req.params.employeeId).isNumeric();
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
+      check(req.params.employeeId, errMsg.employeeIdErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -366,9 +367,9 @@ module.exports = function(app) {
 
   app.del('/api/provider/:providerId/employee/:employeeId/', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
-      check(req.params.employeeId).isNumeric();
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
+      check(req.params.employeeId, errMsg.employeeIdErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -399,8 +400,8 @@ module.exports = function(app) {
 
   app.get('/api/provider/:providerId/balance/', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -430,8 +431,8 @@ module.exports = function(app) {
   
   app.get('/api/provider/:providerId/disbursement/', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -460,11 +461,11 @@ module.exports = function(app) {
 
   app.put('/api/provider/:providerId/disbursement/', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.providerId).isNumeric();
-      check(req.body.paymenttype).isNumeric()
-      check(req.body.type).isNumeric()
-      check(req.body.paylimit).isDecimal();
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
+      check(req.body.paymentType, errMsg.paymentTypeErr).isNumeric()
+      check(req.body.type, errMsg.typeErr).isNumeric()
+      check(req.body.payLimit, errMsg.payLimitErr).isDecimal();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -474,13 +475,13 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {   
 
-        var paymenttype = req.body.paymenttype
-        , paylimit = req.body.paylimit
+        var paymentType = req.body.paymentType
+        , payLimit = req.body.payLimit
         , type = req.body.type;
 
         var statement = [
               'UPDATE disbursement d '
-            , 'SET d.paymenttype = ' + paymenttype + ',d.paylimit = ' + paylimit + ',d.type = ' + type + ' '
+            , 'SET d.paymenttype = ' + paymentType + ',d.paylimit = ' + payLimit + ',d.type = ' + type + ' '
             , 'WHERE ' + data.groupid + ' = 1 AND d.gymid = ' + data.gymid
         ].join(" ");
 

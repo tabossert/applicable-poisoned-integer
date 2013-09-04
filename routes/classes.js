@@ -44,6 +44,13 @@ module.exports = function(app) {
 
   //This used by provider panel only - TESTED
   app.get('/api/classes/', function(req, res){
+    try {
+      check(req.header('token'), errMsg.tokenErr).notNull();
+    } catch (e) {
+      res.send('{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
@@ -69,7 +76,7 @@ module.exports = function(app) {
   //This used by customer and partner panel - TESTED
   app.get('/api/classes/:classId', function(req, res){
     try {
-      check(req.params.classId).isNumeric()
+      check(req.params.classId, errMsg.classIdErr).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -90,12 +97,12 @@ module.exports = function(app) {
   //This used by partner panel only - TESTED
   app.put('/api/classes/:classId', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.body.duration).isNumeric();
-      check(req.body.price).len(1,7).isDecimal();
-      check(req.body.spots).isNumeric();
-      check(req.body.dayPass).isNumeric();
-      check(req.params.classId).isNumeric();
+      check(req.header('token'), errMsg.tokenErr).notNull();
+      check(req.body.duration, errMsg.durationErr).isNumeric();
+      check(req.body.price, errMsg.priceErr).len(1,7).isDecimal();
+      check(req.body.spots, errMsg.spotsErr).isNumeric();
+      check(req.body.dayPass, errMsg.dayPassErr).isNumeric();
+      check(req.params.classId, errMsg.classIdErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -142,11 +149,11 @@ module.exports = function(app) {
   //This used by partner panel only - TESTED
   app.post('/api/classes/', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.body.duration).isNumeric();
-      check(req.body.price).len(1,7).isDecimal();
-      check(req.body.spots).isNumeric();
-      check(req.body.dayPass).isNumeric();
+      check(req.header('token'), errMsg.tokenErr).notNull();
+      check(req.body.duration, errMsg.durationErr).isNumeric();
+      check(req.body.price, errMsg.priceErr).len(1,7).isDecimal();
+      check(req.body.spots, errMsg.spotsErr).isNumeric();
+      check(req.body.dayPass, errMsg.dayPassErr).isNumeric();
 
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
@@ -200,8 +207,8 @@ module.exports = function(app) {
   //This used by partner panel only - TESTED
   app.del('/api/classes/:classId', function(req, res){
     try {
-      check(req.header('token')).notNull();
-      check(req.params.classId).isNumeric()
+      check(req.header('token'), errMsg.tokenErr).notNull();
+      check(req.params.classId, errMsg.classIdErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -233,7 +240,7 @@ module.exports = function(app) {
   //This used by provider panel only - TESTED
   app.get('/api/scheduledClasses/', function(req, res) {
     try {
-      check(req.header('token')).notNull();
+      check(req.header('token'), errMsg.tokenErr).notNull();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -270,7 +277,7 @@ module.exports = function(app) {
   //This used by customer and partner panel - TESTED
   app.get('/api/scheduledClasses/:classId', function(req, res) {
     try {
-      check(req.params.classId).isNumeric();
+      check(req.params.classId, errMsg.classIdErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -296,7 +303,7 @@ module.exports = function(app) {
   //This used by provider panel only - TESTED
   app.post('/api/scheduledClasses/', function(req, res) {
     try {
-      check(req.header('token')).notNull();
+      check(req.header('token'), errMsg.tokenErr).notNull();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -333,8 +340,8 @@ module.exports = function(app) {
   //This used by partner panel only - TESTED
   app.get('/api/scheduledClasses/:classId/participants/', function(req, res) {
     try {
-      check(req.params.classId).isNumeric();
-      check(req.header('token')).notNull();
+      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.header('token'), errMsg.tokenErr).notNull();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -361,8 +368,8 @@ module.exports = function(app) {
   app.put('/api/scheduledClasses/:classId/participants/:participantId', function(req, res) {
     
     try {
-      check(req.params.participantId).isNumeric();
-      check(req.header('token')).notNull();
+      check(req.params.participantId, errMsg.participantIdErr).notNull();
+      check(req.header('token'), errMsg.tokenErr).notNull();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -413,7 +420,7 @@ module.exports = function(app) {
   //This used by customers only - TESTED
   app.get('/api/classes/:classId/scheduledClasses/', function(req, res){
     try {
-      check(req.params.classId).isNumeric() 
+      check(req.params.classId, errMsg.classIdErr).isNumeric(); 
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -444,11 +451,11 @@ module.exports = function(app) {
   //This used by partner panel only - TESTED
   app.put('/api/scheduledClasses/:classId', function(req, res) {
     try {
-      check(req.header('token')).notNull();
-      check(req.params.classId).isNumeric();
-      check(req.body.price).len(1,7).isDecimal();
-      check(req.body.spots).isNumeric();
-      check(req.body.active).isNumeric();
+      check(req.header('token'), errMsg.tokenErr).notNull();
+      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.body.price, errMsg.priceErr).len(1,7).isDecimal();
+      check(req.body.spots, errMsg.spotsErr).isNumeric();
+      check(req.body.active, errMsg.activeErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
