@@ -8,6 +8,7 @@
 var config = config = require('config')
   , moment = require('moment')
   , check = require('validator').check
+  , errMsg = require('../lib/errMsg')
   , sanitize = require('validator').sanitize
 
 // API config settings
