@@ -119,7 +119,6 @@ module.exports = function(app) {
           , duration = req.body.duration
           , spots = req.body.spots
           , price = req.body.price
-          , active = req.body.active
           , dayPass = req.body.dayPass
           , description = req.body.description;
 
@@ -130,7 +129,7 @@ module.exports = function(app) {
         var statement = [
           'UPDATE classes c '
           , 'SET service = ' + wmysql.escape(service) + ',image = ' + wmysql.escape(image) + ',instructor = ' + wmysql.escape(instructor) + ' '
-          , ',duration = ' + duration + ',price = ' + price + ',active = ' + active + ',daypass = ' + dayPass + ',spots = ' + spots + ',`desc` = ' + wmysql.escape(description) + ' '
+          , ',duration = ' + duration + ',price = ' + price + ',daypass = ' + dayPass + ',spots = ' + spots + ',`desc` = ' + wmysql.escape(description) + ' '
           , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
         ].join(" ");
 
@@ -172,6 +171,7 @@ module.exports = function(app) {
           , duration = req.body.duration
           , price = req.body.price
           , spots = req.body.spots
+          , active = 1
           , dayPass = req.body.dayPass
           , description = req.body.description;
 
@@ -186,8 +186,8 @@ module.exports = function(app) {
 
           var statement = [
             'INSERT INTO classes '
-            , '(gymid,service,image,instructor,duration,price,spots,daypass,`desc`,color) '
-            , 'SELECT ' + data.gymid + ',' + wmysql.escape(service) + ',' + wmysql.escape(instructor) + ',' + wmysql.escape(image) + ',' + duration + ',' + price + ',' + spots + ',' + dayPass + ',' + wmysql.escape(description) + ',"' + color + '"'
+            , '(gymid,service,image,instructor,duration,price,spots,active,daypass,`desc`,color) '
+            , 'SELECT ' + data.gymid + ',' + wmysql.escape(service) + ',' + wmysql.escape(instructor) + ',' + wmysql.escape(image) + ',' + duration + ',' + price + ',' + spots + ',' + active + ',' + dayPass + ',' + wmysql.escape(description) + ',"' + color + '"'
           ].join(" ");
 
           wmysql.query(statement, function(err, result, fields) {
@@ -220,8 +220,22 @@ module.exports = function(app) {
       } else {
         var classId = req.params.classId;
 
+        memcached.isMemClass(classId, function(err, class) {
+          class.scheduledClasses.forEach(function(scID) {
+            memcached.isMemScheduledClass(scID, function(err, scheduledId) {
+              scheduledId.participants.forEach(function(participantId) {
+                wmysql.query('CALL deleteEvent(' + participantId + ',' + scheduledId + ')', function(err, result, fields) {
+
+                });
+              });
+            });
+          });
+        });
+
+        wmysql.query('CALL deleteEvent()', function(err, result, fields) {
+
         var statement = [
-          'DELETE c FROM classes c '
+          'UPDATE classes c SET active = 0 '
           , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
         ].join(" ");
 
