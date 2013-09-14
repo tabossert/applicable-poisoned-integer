@@ -220,29 +220,18 @@ module.exports = function(app) {
       } else {
         var classId = req.params.classId;
 
-        memcached.isMemClass(classId, function(err, class) {
-          class.scheduledClasses.forEach(function(scID) {
-            memcached.isMemScheduledClass(scID, function(err, scheduledId) {
-              scheduledId.participants.forEach(function(participantId) {
-                wmysql.query('CALL deleteEvent(' + participantId + ',' + scheduledId + ')', function(err, result, fields) {
-
-                });
-              });
-            });
-          });
-        });
-
-        wmysql.query('CALL deleteEvent()', function(err, result, fields) {
-
-        var statement = [
-          'UPDATE classes c SET active = 0 '
-          , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
-        ].join(" ");
+        var statement = 'CALL cancelClass(' + classId + ',@transMess)';
 
         wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
+          console.log(result);
+          if(err || result[0][0].transMess !== 'success') {
             res.send(400,'{"status": "failed", "message": "No matching class found"}');
           } else {
+            memcached.isMemClass(classId, function(err, data) {
+              data.scheduledClasses.forEach(function(scID) {
+                memcached.remMemKey('sc' + scID.id, function(err, data) { });
+              });
+            });
             memcached.remMemKey('c' + classId, function(err, data) { });
             res.send( '{"classId": ' + classId + '}' );
           }
