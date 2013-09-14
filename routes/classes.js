@@ -225,7 +225,7 @@ module.exports = function(app) {
         wmysql.query(statement, function(err, result, fields) {
           console.log(result);
           if(err || result[0][0].transMess !== 'success') {
-            res.send(400,'{"status": "failed", "message": "No matching class found"}');
+            res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
           } else {
             memcached.isMemClass(classId, function(err, data) {
               data.scheduledClasses.forEach(function(scID) {
@@ -489,6 +489,35 @@ module.exports = function(app) {
             res.send( req.body );
           }
         }); 
+      }
+    });
+  });
+
+  //This used by partner panel only - TESTED
+  app.del('/api/scheduledClasses/:classId', function(req, res){
+    try {
+      check(req.header('token'), errMsg.tokenErr).notNull();
+      check(req.params.classId, errMsg.classIdErr).isNumeric();
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+      if(err) {
+        res.send(401,'{"status": "failed", "message": "invalid token"}');
+      } else {
+        var classId = req.params.classId;
+
+        var statement = 'CALL cancelScheduledClass(' + classId + ',@transMess)';
+
+        wmysql.query(statement, function(err, result, fields) {
+          if(err || result[0][0].transMess !== 'success') {
+            res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
+          } else {
+            memcached.remMemKey('sc' + classId, function(err, data) { });
+            res.send( '{"classId": ' + classId + '}' );
+          }
+        });
       }
     });
   });
