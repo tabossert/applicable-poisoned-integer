@@ -11,6 +11,7 @@ var config = config = require('config')
   , check = require('validator').check
   , sanitize = require('validator').sanitize
   , errMsg = require('../lib/errMsg')
+  , es = require('../lib/elasticsearch')
   , util = require('util');
 
 // API config settings
@@ -179,6 +180,27 @@ module.exports = function(app) {
             }
           });
         });
+      }
+    });
+  });
+
+
+  app.get('/api/provider/:providerId', function(req, res){
+    try {
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric(); 
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }    
+
+    var providerId = req.params.providerId;
+
+    es.getProvider(providerId, function(err, data) {
+      if(err) {
+        res.send(401, '{"status": "failed", "message": "' + err + '"}');
+      } else {
+        res.send( data );
       }
     });
   });
