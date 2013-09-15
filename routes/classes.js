@@ -25,11 +25,11 @@ module.exports = function(app) {
   var colorArr = ['#FF0000','#8A0808','FF8000','#F7FE2E','#00FF00','#0B610B','#00FFFF','#0000FF','#0B0B61','#FA5882','#380B61','#585858']
 
   //This used by provider panel only - TESTED
-  function getColor(gymid,callback) {
+  function getColor(providerid,callback) {
 
     var statement = [
           'SELECT c.color FROM classes c '
-        , 'WHERE c.gymid = ' + gymid + 'ORDER BY c.id DESC LIMIT 1'
+        , 'WHERE c.providerid = ' + providerid + 'ORDER BY c.id DESC LIMIT 1'
     ].join(" ");
 
     rmysql.query(statement, function(err, result, fields) {
@@ -58,8 +58,8 @@ module.exports = function(app) {
       } else { 
 
         var statement = [
-              'SELECT c.id,c.gymid,c.name,c.duration,c.price,c.spots '
-            , 'FROM classes c WHERE c.gymid = ' + data.gymid + ' ORDER BY name'
+              'SELECT c.id,c.providerid,c.name,c.duration,c.price,c.spots '
+            , 'FROM classes c WHERE c.providerid = ' + data.providerid + ' ORDER BY name'
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
@@ -130,7 +130,7 @@ module.exports = function(app) {
           'UPDATE classes c '
           , 'SET name = ' + wmysql.escape(name) + ',image = ' + wmysql.escape(image) + ',instructor = ' + wmysql.escape(instructor) + ' '
           , ',duration = ' + duration + ',price = ' + price + ',daypass = ' + dayPass + ',spots = ' + spots + ',`desc` = ' + wmysql.escape(description) + ' '
-          , 'WHERE c.id = ' + classId + ' AND c.gymid = ' + data.gymid
+          , 'WHERE c.id = ' + classId + ' AND c.providerid = ' + data.providerid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
@@ -181,13 +181,13 @@ module.exports = function(app) {
           var spots = 30;
         }
 
-        getColor(data.gymid,function(cb) {
+        getColor(data.providerid,function(cb) {
           color = cb;
 
           var statement = [
             'INSERT INTO classes '
-            , '(gymid,name,image,instructor,duration,price,spots,active,daypass,`desc`,color) '
-            , 'SELECT ' + data.gymid + ',' + wmysql.escape(name) + ',' + wmysql.escape(instructor) + ',' + wmysql.escape(image) + ',' + duration + ',' + price + ',' + spots + ',' + active + ',' + dayPass + ',' + wmysql.escape(description) + ',"' + color + '"'
+            , '(providerid,name,image,instructor,duration,price,spots,active,daypass,`desc`,color) '
+            , 'SELECT ' + data.providerid + ',' + wmysql.escape(name) + ',' + wmysql.escape(instructor) + ',' + wmysql.escape(image) + ',' + duration + ',' + price + ',' + spots + ',' + active + ',' + dayPass + ',' + wmysql.escape(description) + ',"' + color + '"'
           ].join(" ");
 
           wmysql.query(statement, function(err, result, fields) {
@@ -261,7 +261,7 @@ module.exports = function(app) {
       var statement = [
             'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime,sc.name'
           , 'FROM scheduledClass sc '
-          , 'WHERE sc.gymid = ' + data.gymid
+          , 'WHERE sc.providerid = ' + data.providerid
           , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
           , ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
           , ' ORDER BY sc.datetime'
@@ -317,14 +317,14 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-      console.log("gym " + data)
+      console.log("provider " + data)
       var classObj = req.body;
 
       var statement = [
           'INSERT INTO scheduledClass '
-        , '(classid,datetime,active,price,gymid,spots,name,instructor,image,daypass,desc) '
-        , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,price,gymid,spots,name,instructor,image,daypass,desc '
-        , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND gymid = ' + data.gymid
+        , '(classid,datetime,active,price,providerid,spots,name,instructor,image,daypass,desc) '
+        , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,price,providerid,spots,name,instructor,image,daypass,desc '
+        , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND providerid = ' + data.providerid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {    
@@ -406,7 +406,7 @@ module.exports = function(app) {
         , 'SET '
         , (particObj.checkin) >= 0 ? 's.checkin = ' + particObj.checkin + ',' : ''
         , 's.chkintime = NOW() '
-        , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND s.gymid = ' + data.gymid
+        , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND s.providerid = ' + data.providerid
         ].join(" ");
       
       rmysql.query(statement, function(err, result) {
@@ -478,7 +478,7 @@ module.exports = function(app) {
         var statement = [
               'UPDATE scheduledClass sc '
             , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ',active = ' + active + ' '
-            , 'WHERE sc.id = ' + classId + ' AND sc.gymid = ' + data.gymid
+            , 'WHERE sc.id = ' + classId + ' AND sc.providerid = ' + data.providerid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {

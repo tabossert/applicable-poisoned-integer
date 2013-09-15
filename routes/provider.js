@@ -53,33 +53,33 @@ module.exports = function(app) {
     
 
     var statement = [
-          'SELECT gu.gymid,g.name FROM gymUsers gu INNER JOIN gyms g ON gu.gymid = g.id '
-        , 'WHERE gu.username = %s AND gu.password = %s'
+          'SELECT e.providerid,p.name FROM employees e INNER JOIN providers p ON e.providerid = p.id '
+        , 'WHERE e.username = %s AND e.password = %s'
     ].join(" ");
 
     var statement2 = [
-          'UPDATE gymUsers SET token = "%s", lastlogin = NOW() '
-        , 'WHERE gymid = %s'
+          'UPDATE employees SET token = "%s", lastlogin = NOW() '
+        , 'WHERE providerid = %s'
     ].join(" ");
 
     rmysql.query( util.format(statement, wmysql.escape(username), wmysql.escape(password)), function(err, result, fields) {
       console.log(result)
       if(result && result.length > 0){
         
-        var gymid = result[0].gymid
+        var providerid = result[0].providerid
         , name = result[0].name
         , id = result[0].id;
 
         var providerObj = {};
         providerObj.employeeId = id;
         providerObj.name = name;
-        providerObj.providerId = gymid;
+        providerObj.providerId = providerid;
         
         require('crypto').randomBytes(48, function(ex, buf) {
           var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
           console.log("** routes/provider/login **", "result", result);
           
-          wmysql.query( util.format(statement2, token, gymid), function(err, result, fields){
+          wmysql.query( util.format(statement2, token, providerid), function(err, result, fields){
             console.log("** routes/provider/login **", "2nd result", result);
             if(err || result.affectedRows < 1) {
               res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
@@ -114,7 +114,7 @@ module.exports = function(app) {
       } else { 
 
         var statement = [
-              'UPDATE gymUsers SET token = null '
+              'UPDATE employees SET token = null '
             , 'WHERE id = ' + data.id
         ].join(" ");  
 
@@ -154,8 +154,8 @@ module.exports = function(app) {
         , image = req.body.image;
 
         var statement = [
-              'UPDATE gyms g SET g.image = ' + wmysql.escape(CFcontainer + iName) + ' '
-            , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
+              'UPDATE providers p SET p.image = ' + wmysql.escape(CFcontainer + iName) + ' '
+            , 'WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
         ].join(" ");
 
         fs.writeFile('images/' + req.body.iName, new Buffer(req.body.image, "base64"), function(err) {
@@ -163,7 +163,7 @@ module.exports = function(app) {
             if(err) {
               res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
             } else {
-              CFclient.addFile('gymImages', { remote: req.body.iName, local: 'images/' + req.body.iName }, function (err, uploaded) {
+              CFclient.addFile('providerImages', { remote: req.body.iName, local: 'images/' + req.body.iName }, function (err, uploaded) {
                 if(err) {
                   res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
                 } else {
@@ -227,11 +227,11 @@ module.exports = function(app) {
         , sundayClose = req.body.sundayClose;
 
         var statement = [
-              'UPDATE gyms g set g.name = ' + wmysql.escape(name) + ',g.address = ' + wmysql.escape(address) + ',g.city = ' + wmysql.escape(city) + ','
-            , 'g.state = ' + wmysql.escape(state) + ',g.zipcode = ' + zipcode + ',g.phone = ' + wmysql.escape(phone) + ','
-            , 'g.email = ' + wmysql.escape(email) + ',g.contact = ' + wmysql.escape(contact) + ',g.facebook = ' + wmysql.escape(facebook) + ','
-            , 'g.twitter = ' + wmysql.escape(twitter) + ',g.googleplus = ' + wmysql.escape(googleplus) + ',g.url = ' + wmysql.escape(url) + ',g.complete = true '
-            , 'WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
+              'UPDATE providers p set p.name = ' + wmysql.escape(name) + ',p.address = ' + wmysql.escape(address) + ',p.city = ' + wmysql.escape(city) + ','
+            , 'p.state = ' + wmysql.escape(state) + ',p.zipcode = ' + zipcode + ',p.phone = ' + wmysql.escape(phone) + ','
+            , 'p.email = ' + wmysql.escape(email) + ',p.contact = ' + wmysql.escape(contact) + ',p.facebook = ' + wmysql.escape(facebook) + ','
+            , 'p.twitter = ' + wmysql.escape(twitter) + ',p.googleplus = ' + wmysql.escape(googleplus) + ',p.url = ' + wmysql.escape(url) + ',p.complete = true '
+            , 'WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
         ].join(" ");
 
         var statement2 = [
@@ -239,7 +239,7 @@ module.exports = function(app) {
             , 'tuesdayOpen = ' + wmysql.escape(tuesdayOpen) + ',tuesdayClose = ' + wmysql.escape(tuesdayClose) + ', wednesdayOpen = ' + wmysql.escape(wednesdayOpen) + ',wednesdayClose = ' + wmysql.escape(wednesdayClose) + ','
             , 'thursdayOpen = ' + wmysql.escape(thursdayOpen) + ',thursdayClose = ' + wmysql.escape(thursdayClose) + ',fridayOpen = ' + wmysql.escape(fridayOpen) + ',fridayClose = ' + wmysql.escape(fridayClose) + ','
             , 'saturdayOpen = ' + wmysql.escape(saturdayOpen) + ',saturdayClose = ' + wmysql.escape(saturdayClose) + ',sundayOpen = ' + wmysql.escape(sundayOpen) + ',sundayClose = ' + wmysql.escape(sundayClose) + ' '
-            , 'WHERE ' + data.groupid + ' = 1 AND h.gymid = ' + data.gymid
+            , 'WHERE ' + data.groupid + ' = 1 AND h.providerid = ' + data.providerid
         ].join(" ");        
 
         wmysql.query(statement, function(err, result, fields) {
@@ -251,9 +251,9 @@ module.exports = function(app) {
                 res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
               } else {
                 geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lng,lat) {
-                  cordinatesModel.findOne({gymid: providerId}, function(err, p) {
+                  cordinatesModel.findOne({providerid: providerId}, function(err, p) {
                     if(!p) {
-                      var gymLoc = new cordinatesModel({ gymid: providerId, loc: {lat: lat, lng: lng }});
+                      var gymLoc = new cordinatesModel({ providerid: providerId, loc: {lat: lat, lng: lng }});
                         gymLoc.save(function (err) {
                           if(err)
                             res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
@@ -303,9 +303,9 @@ module.exports = function(app) {
         , lastName = req.body.lastName;
 
         var statement = [
-              'INSERT INTO gymUsers (gymid,token,username,password,first_name,last_name,groupid,lastlogin) '
+              'INSERT INTO emplyees (providerid,token,username,password,first_name,last_name,groupid,lastlogin) '
             , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
-            , 'FROM gyms g WHERE ' + data.groupid + ' = 1 AND g.id = ' + data.gymid
+            , 'FROM providers p WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
@@ -338,12 +338,12 @@ module.exports = function(app) {
         , cpass = req.body.cpass;
 
         var statement = [
-              'SELECT password FROM gymUsers '
+              'SELECT password FROM employees '
             , 'WHERE id = ' + data.id
         ].join(" ");
 
         var statement2 = [
-              'UPDATE gymUsers SET password = ' + wmysql.escape(req.body.npass) + ' '
+              'UPDATE employees SET password = ' + wmysql.escape(req.body.npass) + ' '
             , 'WHERE id = ' + data.id
         ].join(" ");
 
@@ -382,8 +382,8 @@ module.exports = function(app) {
         var employeeId = req.params.employeeId;
 
         var statement = [
-              'DELETE FROM gymUsers '
-            , 'WHERE id = ' + employeeId + ' AND ' + data.groupid + ' = 1 AND gu.gymid = ' + data.gymid 
+              'DELETE FROM employees e'
+            , 'WHERE e.id = ' + employeeId + ' AND ' + data.groupid + ' = 1 AND e.providerid = ' + data.providerid 
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
@@ -413,8 +413,8 @@ module.exports = function(app) {
 
         var statement = [
               'SELECT balance '
-            , 'FROM gymBilling gb '
-            , 'WHERE gb.gid = ' + data.gymid
+            , 'FROM providerBilling pb '
+            , 'WHERE pb.providerid = ' + data.providerid
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
@@ -444,7 +444,7 @@ module.exports = function(app) {
 
         var statement = [
               'SELECT d.paymenttype,d.paylimit,d.type '
-            , 'FROM disbursement d WHERE d.gymid = ' + data.gymid
+            , 'FROM disbursement d WHERE d.providerid = ' + data.providerid
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
@@ -482,7 +482,7 @@ module.exports = function(app) {
         var statement = [
               'UPDATE disbursement d '
             , 'SET d.paymenttype = ' + paymentType + ',d.paylimit = ' + payLimit + ',d.type = ' + type + ' '
-            , 'WHERE ' + data.groupid + ' = 1 AND d.gymid = ' + data.gymid
+            , 'WHERE ' + data.groupid + ' = 1 AND d.providerid = ' + data.providerid
         ].join(" ");
 
         wmysql.query(statement, function(err, result, fields) {
