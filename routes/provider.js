@@ -300,11 +300,14 @@ module.exports = function(app) {
 
         var username = req.body.username
         , firstName = req.body.firstName
-        , lastName = req.body.lastName;
+        , lastName = req.body.lastName
+        , title = req.body.title
+        , instructor = req.body.instructor;
 
         var statement = [
-              'INSERT INTO emplyees (providerid,token,username,password,first_name,last_name,groupid,lastlogin) '
+              'INSERT INTO employees (providerid,token,username,password,first_name,last_name,groupid,lastlogin,title,instructor) '
             , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
+            , ',' + wmysql.escape(title) + ',' + instructor + ' '
             , 'FROM providers p WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
         ].join(" ");
 
@@ -320,7 +323,81 @@ module.exports = function(app) {
   });
 
 
-  app.put('/api/provider/:providerId/employee/:employeemployeeId/updatePassword/', function(req, res) {
+  app.get('/api/provider/:providerId/employees/', function(req, res){
+    try {
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+      if(err) {
+        res.send(401,'{"status": "failed", "message": "invalid token"}');
+      } else { 
+
+        var providerId = req.params.employeeId; 
+
+        var statement = [
+              'SELECT providerid,username,first_name,last_name,groupid,title,instructor '
+            , 'FROM employees WHERE providerid = ' + data.providerid
+        ].join(" ");
+
+        rmysql.query(statement, function(err, result, fields) {
+          if(err) {
+            res.send(400,'{"status": "failed", "message": "error occured with employees table"}');
+          } else {
+            res.send( result );
+          }
+        });
+      }
+    });
+  });
+
+
+  app.put('/api/provider/:providerId/employees/:employeeId', function(req, res){
+    try {
+      check(req.header('token'),errMsg.tokenErr).notNull();
+      check(req.params.employeeId, errMsg.providerIdErr).isNumeric();
+      check(req.params.providerId, errMsg.providerIdErr).isNumeric();
+      check(req.body.username, errMsg.emailErr).isEmail();
+    } catch (e) {
+      res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
+      return;
+    }
+    memcached.isMemAuth(req.header('token'), function(err,data) {
+      if(err) {
+        res.send(401,'{"status": "failed", "message": "invalid token"}');
+      } else { 
+        require('crypto').randomBytes(48, function(ex, buf) {
+          var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+        });
+
+        var employeeId = req.params.employeeId
+        , firstName = req.body.firstName
+        , lastName = req.body.lastName
+        , title = req.body.title
+        , instructor = req.body.instructor;
+
+        var statement = [
+              'UPDATE employees SET first_name = ' + wmysql.escape(firstName) + ',last_name = ' + wmysql.escape(lastName) + ','
+            , 'title = ' + wmysql.escape(title) + ',instructor = ' + instructor + ' '
+            , 'WHERE id = ' + employeeId + ' AND ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
+        ].join(" ");
+
+        wmysql.query(statement, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
+          } else {
+            res.send( result );
+          }
+        });
+      }
+    });
+  });
+
+
+  app.put('/api/provider/:providerId/employees/:employeeId/updatePassword/', function(req, res) {
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -365,7 +442,7 @@ module.exports = function(app) {
   });
 
 
-  app.del('/api/provider/:providerId/employee/:employeeId/', function(req, res){
+  app.del('/api/provider/:providerId/employees/:employeeId/', function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
