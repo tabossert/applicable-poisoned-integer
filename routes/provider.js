@@ -184,7 +184,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:providerId', function(req, res){
+  app.put('/api/provider/:providerId', function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -230,8 +230,8 @@ module.exports = function(app) {
               'UPDATE providers p set p.name = ' + wmysql.escape(name) + ',p.address = ' + wmysql.escape(address) + ',p.city = ' + wmysql.escape(city) + ','
             , 'p.state = ' + wmysql.escape(state) + ',p.zipcode = ' + zipcode + ',p.phone = ' + wmysql.escape(phone) + ','
             , 'p.email = ' + wmysql.escape(email) + ',p.contact = ' + wmysql.escape(contact) + ',p.facebook = ' + wmysql.escape(facebook) + ','
-            , 'p.twitter = ' + wmysql.escape(twitter) + ',p.googleplus = ' + wmysql.escape(googleplus) + ',p.url = ' + wmysql.escape(url) + ',p.complete = true '
-            , 'WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
+            , 'p.twitter = ' + wmysql.escape(twitter) + ',p.googleplus = ' + wmysql.escape(googleplus) + ',p.url = ' + wmysql.escape(url) + ',p.complete = true'
+            , 'p.lat = %s,p.lon = %s WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
         ].join(" ");
 
         var statement2 = [
@@ -242,39 +242,20 @@ module.exports = function(app) {
             , 'WHERE ' + data.groupid + ' = 1 AND h.providerid = ' + data.providerid
         ].join(" ");        
 
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "update to row failed"}');
-          } else {
-            wmysql.query(statement2, function(err, result, fields) {
-              if(err || result.affectedRows < 1) {
-                res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
-              } else {
-                geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lng,lat) {
-                  cordinatesModel.findOne({providerid: providerId}, function(err, p) {
-                    if(!p) {
-                      var gymLoc = new cordinatesModel({ providerid: providerId, loc: {lat: lat, lng: lng }});
-                        gymLoc.save(function (err) {
-                          if(err)
-                            res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
-                          else   
-                            res.send( result );
-                        });
-                      } else { 
-                        p.loc.lat = lat;
-                        p.loc.lng = lng;  
-                        p.save(function(err) {
-                          if(err) 
-                            res.send(400,'{"status": "failed", "message": "geo cordinates update failed: ' + err + '"}');
-                          else
-                            res.send( result );
-                        });
-                      }
-                    });
-                  });
-                } 
-            });
-          } 
+        geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lat,lon) {
+          wmysql.query(util.format(statement, lat, lon), function(err, result, fields) {
+            if(err || result.affectedRows < 1) {
+              res.send(400,'{"status": "failed", "message": "update to row failed"}');
+            } else {
+              wmysql.query(statement2, function(err, result, fields) {
+                if(err || result.affectedRows < 1) {
+                  res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
+                } else {
+                  res.send( req.body );
+                }
+              });
+            }
+          }); 
         });
       }
     });
@@ -335,7 +316,6 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
-
         var providerId = req.params.employeeId; 
 
         var statement = [
