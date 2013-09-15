@@ -339,7 +339,7 @@ module.exports = function(app) {
         var providerId = req.params.employeeId; 
 
         var statement = [
-              'SELECT providerid,username,first_name,last_name,groupid,title,instructor '
+              'SELECT id,providerid,username,first_name,last_name,groupid,title,instructor '
             , 'FROM employees WHERE providerid = ' + data.providerid
         ].join(" ");
 
