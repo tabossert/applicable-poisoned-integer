@@ -7,7 +7,6 @@ var config = config = require('config')
   , fs = require("fs")
   , path = require("path")
   , crypto = require('crypto')
-  , mongoose = require("mongoose")
   , check = require('validator').check
   , sanitize = require('validator').sanitize
   , errMsg = require('../lib/errMsg')
