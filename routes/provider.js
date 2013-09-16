@@ -360,7 +360,6 @@ module.exports = function(app) {
   app.put('/api/provider/:providerId/employees/:employeeId', function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
-      check(req.params.employeeId, errMsg.providerIdErr).isNumeric();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
       check(req.body.username, errMsg.emailErr).isEmail();
     } catch (e) {
