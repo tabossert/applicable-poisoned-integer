@@ -9,7 +9,7 @@
 var config = config = require('config')
   , moment = require('moment')
   , S = require('string')
-  , mongoose = require("mongoose")
+  //, mongoose = require("mongoose")
   , geo = require('geo')
   , geoip = require('geoip-lite')
   , check = require('validator').check
@@ -21,10 +21,10 @@ var wmysql = dbConn.wmysql;
 var amysql = dbConn.amysql;
 
 //MongoDB Database
-mongoose.connect(config.Mongo.HOST);
+//mongoose.connect(config.Mongo.HOST);
 
 // Schema 
-var Schema = mongoose.Schema;
+/*var Schema = mongoose.Schema;
 
 var cordinates = new Schema({
   gymid : Number,
@@ -36,7 +36,7 @@ cordinates.index ({
 });
 
 var cordinatesModel = mongoose.model('cordinates', cordinates);
-
+*/
 module.exports = function(app) {
     // Route returns providers using zip or state.  This would be used on the home page before signup
     app.get('/api/gymSearch/:type/:value/:state', function(req, res){
@@ -57,7 +57,7 @@ module.exports = function(app) {
     });
 
     // Route returns providers on myPanel from search params
-    app.post('/api/gymSearchAdvanced/', function(req, res){
+    /*app.post('/api/gymSearchAdvanced/', function(req, res){
       var disObj = {};
       // Get location from address, Mongo query happens here using 2d geo-spatial index
       function getLoc(address,distance,callback) {
@@ -165,7 +165,7 @@ module.exports = function(app) {
           res.send(result);
         }
       });
-    });
+    });*/
 
 
     app.get('/api/gymInfo/:gymId', function(req, res){
@@ -175,7 +175,6 @@ module.exports = function(app) {
         res.end('{"status": "failed", "message":"' + e.message + '"}');
         return;
       }
-      console.log('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.contact,g.rate,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM gyms g INNER JOIN hours h ON g.id = h.gymid WHERE g.id = ' + rmysql.escape(req.params.gymId));
       rmysql.query('SELECT g.id,g.name,g.address,g.city,g.state,g.zipcode,g.phone,g.email,g.contact,g.rate,g.image,g.facebook,g.twitter,g.googleplus,g.url,h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose FROM gyms g INNER JOIN hours h ON g.id = h.gymid WHERE g.id = ' + rmysql.escape(req.params.gymId), function(err, result, fields) {
         if (err || result.length < 1) {
           res.send('{"status": "failed", "message": "no gym matches"}');
