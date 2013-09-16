@@ -7,7 +7,8 @@ var express = require('express')
   , domain = require('domain')
   , crypto = require('crypto')
   , connect = require('connect')
-  , fs = require("fs")
+  , fs = require('fs')
+  , path = require('path')
   , S = require('string')
   , http = require('http')
   , https = require('https')
@@ -115,8 +116,10 @@ app.configure(function(){
 
 var routePath=__dirname + "/routes/";
 fs.readdirSync(routePath).forEach(function(file) {
+  if(path.extname(file) == '.js') {
     var route=routePath+file;
     require(route)(app);
+  }
 });
 
 
