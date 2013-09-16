@@ -284,7 +284,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:providerId/employee/', function(req, res){
+  app.post('/api/provider/:providerId/employees/', function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
