@@ -9,7 +9,6 @@
     "express": "3.3.5",
     "connect": "2.8.5", 
     "mysql": "2.0.0-alpha8",
-    "mongoose": "3.6.17",
     "janrain-api": "0.0.1",
     "geo": "0.0.3",
     "geoip-lite": "1.1.1",
