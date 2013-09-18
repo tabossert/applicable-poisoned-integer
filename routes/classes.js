@@ -206,10 +206,11 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.del('/api/classes/:classId', function(req, res){
+  app.del('/api/classes/:classId/:cancelFuture', function(req, res){
     try {
       check(req.header('token'), errMsg.tokenErr).notNull();
       check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.cancelFuture, errMsg.cancelFutureErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -218,9 +219,11 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        var classId = req.params.classId;
+        var classId = req.params.classId
+        , cancelFuture = req.params.cancelFuture;
 
-        var statement = 'CALL cancelClass(' + classId + ',@transMess)';
+
+        var statement = 'CALL cancelClass(' + classId + ',' + cancelFuture + ',@transMess)';
 
         wmysql.query(statement, function(err, result, fields) {
           console.log(result);
