@@ -86,7 +86,7 @@ module.exports = function(app) {
             } else {
               providerObj.token = token;
               memcached.setMemAuth(token, function(err, data) {});
-              res.send( JSON.stringify(providerObj) );
+              res.send( providerObj );
             }
           });
         });
@@ -409,11 +409,7 @@ module.exports = function(app) {
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {
-
-        var eObj = {};
-        eObj.providerId = req.params.providerId;
-        eObj.employeeId = req.params.employeeId;   
+      } else {  
 
         var npass = req.body.npass
         , cpass = req.body.cpass;
@@ -434,7 +430,7 @@ module.exports = function(app) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
               } else {
-                res.send( eObj );
+                res.send( req.params );
               }
             });
           } else {
@@ -460,10 +456,6 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
 
-        var eObj = {};
-        eObj.employeeId = req.params.employeeId;
-        eObj.providerId = req.params.providerId;
-
         var employeeId = req.params.employeeId;
 
         var statement = [
@@ -475,7 +467,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
           } else {
-            res.send( eObj );
+            res.send( req.params );
           }
         });
       }
