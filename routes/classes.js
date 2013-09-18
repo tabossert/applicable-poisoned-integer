@@ -118,7 +118,6 @@ module.exports = function(app) {
           , price = req.body.price
           , dayPass = req.body.dayPass
           , description = req.body.description;
-          
 
         var statement = [
           'UPDATE classes c '
@@ -171,9 +170,6 @@ module.exports = function(app) {
 
         var classesObj = req.body;
 
-        if(spots == null) {
-          var spots = 30;
-        }
 
         getColor(data.providerid,function(cb) {
           color = cb;
