@@ -317,7 +317,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
           } else {
-            res.send( result );
+            res.send( req.body );
           }
         });
       }
@@ -389,7 +389,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
           } else {
-            res.send( result );
+            res.send( req.body );
           }
         });
       }
@@ -409,7 +409,11 @@ module.exports = function(app) {
     memcached.isMemAuth(req.header('token'), function(err,data) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {   
+      } else {
+
+        var eObj = {};
+        eObj.providerId = req.params.providerId;
+        eObj.employeeId = req.params.employeeId;   
 
         var npass = req.body.npass
         , cpass = req.body.cpass;
@@ -430,7 +434,7 @@ module.exports = function(app) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
               } else {
-                res.send( result );
+                res.send( eObj );
               }
             });
           } else {
@@ -456,6 +460,10 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
 
+        var eObj = {};
+        eObj.employeeId = req.params.employeeId;
+        eObj.providerId = req.params.providerId;
+
         var employeeId = req.params.employeeId;
 
         var statement = [
@@ -467,7 +475,7 @@ module.exports = function(app) {
           if(err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
           } else {
-            res.send( result );
+            res.send( eObj );
           }
         });
       }
@@ -566,7 +574,7 @@ module.exports = function(app) {
           if (err || result.affectedRows < 1) {
             res.send(400,'{"status": "failed", "message": "update to disbursement row failed"}');
           } else {
-            res.send( result );
+            res.send( req.body );
           }
         });
       }
