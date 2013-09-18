@@ -32,9 +32,11 @@ module.exports = function(app) {
     rmysql.query(statement, function(err, result, fields) {
       if(!result) {
         callback('#FF0000');
+        return;
       } else {
         colorIndex = colorArr.indexOf(result[0].color) + 1;
         callback(colorArr[colorIndex]);
+        return;
       }
     });
   }
