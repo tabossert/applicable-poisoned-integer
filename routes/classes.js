@@ -118,10 +118,7 @@ module.exports = function(app) {
           , price = req.body.price
           , dayPass = req.body.dayPass
           , description = req.body.description;
-
-        if(spots == null) {
-          var spots = 30;
-        }
+          
 
         var statement = [
           'UPDATE classes c '
