@@ -233,7 +233,7 @@ module.exports = function(app) {
               });
             });
             memcached.remMemKey('c' + classId, function(err, data) { });
-            res.send( '{"classId": ' + classId + '}' );
+            res.send( req.params );
           }
         });
       }
@@ -515,7 +515,7 @@ module.exports = function(app) {
             res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
           } else {
             memcached.remMemKey('sc' + classId, function(err, data) { });
-            res.send( '{"classId": ' + classId + '}' );
+            res.send( req.params );
           }
         });
       }
