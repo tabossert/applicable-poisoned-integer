@@ -13,14 +13,13 @@ var config = config = require('config')
   , es = require('../lib/elasticsearch')
   , util = require('util');
 
-// API config settings
-var salt = config.Hash.salt;
 
 //DB
 var dbConn = require('../lib/mysqlConn');
 var rmysql = dbConn.rmysql;
 var wmysql = dbConn.wmysql;
-var amysql = dbConn.amysql;
+
+var memcached = require('../lib/memcached');
 
 var cloudfiles = require('cloudfiles');
 var CFconfig = {
@@ -33,8 +32,6 @@ var CFconfig = {
 
 var CFcontainer = config.CloudFiles.CFcontainer;
 var CFclient = cloudfiles.createClient(CFconfig);
-
-var memcached = require('../lib/memcached');
 
 module.exports = function(app) {
 
