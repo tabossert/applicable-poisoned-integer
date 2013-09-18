@@ -365,8 +365,9 @@ module.exports = function(app) {
   app.put('/api/scheduledClasses/:classId/participants/:participantId', function(req, res) {
     
     try {
-      check(req.params.participantId, errMsg.participantIdErr).notNull();
       check(req.header('token'), errMsg.tokenErr).notNull();
+      check(req.params.participantId, errMsg.participantIdErr).notNull();
+      check(req.body.checkin, errMsg.checkinErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -399,7 +400,7 @@ module.exports = function(app) {
         , 'SET '
         , (particObj.checkin) >= 0 ? 's.checkin = ' + particObj.checkin + ',' : ''
         , 's.chkintime = NOW() '
-        , 'WHERE s.id = ' + wmysql.escape(participantId) + ' AND s.providerid = ' + data.providerid
+        , 'WHERE s.id = ' + participantId + ' AND s.providerid = ' + data.providerid
         ].join(" ");
       
       rmysql.query(statement, function(err, result) {
