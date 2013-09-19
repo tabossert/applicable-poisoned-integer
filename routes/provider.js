@@ -408,6 +408,10 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {  
 
+        var empObj = {};
+        empObj.providerId = req.params.providerId;
+        empObj.employeeId = req.params.employeeId;
+
         var npass = req.body.npass
         , cpass = req.body.cpass;
 
@@ -427,7 +431,7 @@ module.exports = function(app) {
               if(err || result.affectedRows < 1) {
                 res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
               } else {
-                res.send( req.params );
+                res.send( empObj );
               }
             });
           } else {
