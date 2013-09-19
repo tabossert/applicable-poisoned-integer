@@ -211,24 +211,25 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        var classId = req.params.classId
-        , cancelFuture = req.params.cancelFuture;
+        var classObj = {};
+        classObj.classId = req.params.classId;
+        classObj.cancelFuture = req.params.cancelFuture;
 
 
-        var statement = 'CALL cancelClass(' + classId + ',' + cancelFuture + ',@transMess)';
+        var statement = 'CALL cancelClass(' + classObj.classId + ',' + classObj.cancelFuture + ',@transMess)';
 
         wmysql.query(statement, function(err, result, fields) {
           console.log(result);
           if(err || result[0][0].transMess !== 'success') {
             res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
           } else {
-            memcached.isMemClass(classId, function(err, data) {
+            memcached.isMemClass(classObj.classId, function(err, data) {
               data.scheduledClasses.forEach(function(scID) {
                 memcached.remMemKey('sc' + scID.id, function(err, data) { });
               });
             });
-            memcached.remMemKey('c' + classId, function(err, data) { });
-            res.send( req.params );
+            memcached.remMemKey('c' + classObj.classId, function(err, data) { });
+            res.send( classObj );
           }
         });
       }
@@ -502,16 +503,17 @@ module.exports = function(app) {
       if(err) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else {
-        var classId = req.params.classId;
+        var classObj = {};
+        classObj.classId = req.params.classId;
 
-        var statement = 'CALL cancelScheduledClass(' + classId + ',@transMess)';
+        var statement = 'CALL cancelScheduledClass(' + classObj.classId + ',@transMess)';
 
         wmysql.query(statement, function(err, result, fields) {
           if(err || result[0][0].transMess !== 'success') {
             res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
           } else {
             memcached.remMemKey('sc' + classId, function(err, data) { });
-            res.send( req.params );
+            res.send( classObj );
           }
         });
       }
