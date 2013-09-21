@@ -58,7 +58,7 @@ module.exports = function(app) {
 
         var statement = [
               'SELECT c.id,c.providerid,c.name,c.duration,c.price,c.spots '
-            , 'FROM classes c WHERE c.providerid = ' + data.providerid + ' AND active = 1 ORDER BY name'
+            , 'FROM classes c WHERE c.providerid = ' + data.providerid + ' AND active = true ORDER BY name'
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
@@ -319,7 +319,8 @@ module.exports = function(app) {
       var statement = [
           'INSERT INTO scheduledClass '
         , '(classid,datetime,active,price,providerid,spots,name,instructor,image,daypass,desc) '
-        , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,price,providerid,spots,name,instructor,image,daypass,desc '
+        , ',' + classObj.instructor + ',' + wmysql.escape(classObj.image) + ',' + classObj.daypass + ',' + wmysql.escape(classObj.desc) + ' '
+        , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,' + classObj.price + ',providerid,' + classObj.spots + ',' + classObj.name + ' '
         , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND providerid = ' + data.providerid
         ].join(" ");
 
@@ -457,6 +458,7 @@ module.exports = function(app) {
       check(req.body.price, errMsg.priceErr).len(1,7).isDecimal();
       check(req.body.spots, errMsg.spotsErr).isNumeric();
       check(req.body.active, errMsg.activeErr).isNumeric();
+      check(req.body.dayPass, errMsg.dayPassErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
@@ -470,11 +472,15 @@ module.exports = function(app) {
         , price = req.body.price
         , spots = req.body.spots
         , instructor = req.body.instructor
-        , active = req.body.active;
+        , active = req.body.active
+        , image = req.body.image
+        , desc = req.body.desc
+        , dayPass = req.body.dayPass;
 
         var statement = [
               'UPDATE scheduledClass sc '
-            , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ',active = ' + active + ' '
+            , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ',active = ' + active + ''
+            , ',image = ' + wmysql.escape(image) + ',desc = ' + wmysql.escape(desc) + ',daypass = ' + dayPass + ' '
             , 'WHERE sc.id = ' + classId + ' AND sc.providerid = ' + data.providerid
         ].join(" ");
 
