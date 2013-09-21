@@ -318,12 +318,22 @@ module.exports = function(app) {
 
       var statement = [
           'INSERT INTO scheduledClass '
-        , '(classid,datetime,active,price,providerid,spots,name,instructor,image,daypass,desc) '
-        , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,' + classObj.price + ',providerid,' + classObj.spots + ',' + classObj.name + ' '
+        , '(classid,datetime,active,price,providerid,spots,name,instructor,image,daypass,`desc`) '
+        , 'SELECT ' + [
+                       wmysql.escape(classObj.classId),
+                       wmysql.escape(classObj.datetime),
+                       '1',
+                       wmysql.escape( String(classObj.price) ),
+                       'providerid',
+                       wmysql.escape( String(classObj.spots) ),
+                       wmysql.escape(classObj.name)
+                    ].join(', ') + ' '
         , ',' + classObj.instructor + ',' + wmysql.escape(classObj.image) + ',' + classObj.daypass + ',' + wmysql.escape(classObj.desc) + ' '
         , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND providerid = ' + data.providerid
         ].join(" ");
 
+        console.log(statement);
+        
         wmysql.query(statement, function(err, result, fields) {    
           if(err) {
             res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
@@ -480,7 +490,7 @@ module.exports = function(app) {
         var statement = [
               'UPDATE scheduledClass sc '
             , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ',active = ' + active + ''
-            , ',image = ' + wmysql.escape(image) + ',desc = ' + wmysql.escape(desc) + ',daypass = ' + dayPass + ' '
+            , ',image = ' + wmysql.escape(image) + ',`desc` = ' + wmysql.escape(desc) + ',daypass = ' + dayPass + ' '
             , 'WHERE sc.id = ' + classId + ' AND sc.providerid = ' + data.providerid
         ].join(" ");
 
