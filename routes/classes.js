@@ -319,8 +319,8 @@ module.exports = function(app) {
       var statement = [
           'INSERT INTO scheduledClass '
         , '(classid,datetime,active,price,providerid,spots,name,instructor,image,daypass,desc) '
-        , ',' + classObj.instructor + ',' + wmysql.escape(classObj.image) + ',' + classObj.daypass + ',' + wmysql.escape(classObj.desc) + ' '
         , 'SELECT ' + wmysql.escape(classObj.classId) + ',' + wmysql.escape(classObj.datetime) + ',1,' + classObj.price + ',providerid,' + classObj.spots + ',' + classObj.name + ' '
+        , ',' + classObj.instructor + ',' + wmysql.escape(classObj.image) + ',' + classObj.daypass + ',' + wmysql.escape(classObj.desc) + ' '
         , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND providerid = ' + data.providerid
         ].join(" ");
 
