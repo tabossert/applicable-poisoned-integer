@@ -58,7 +58,7 @@ module.exports = function(app) {
 
         var statement = [
               'SELECT c.id,c.providerid,c.name,c.duration,c.price,c.spots '
-            , 'FROM classes c WHERE c.providerid = ' + data.providerid + ' ORDER BY name'
+            , 'FROM classes c WHERE c.providerid = ' + data.providerid + ' AND active = 1 ORDER BY name'
         ].join(" ");
 
         rmysql.query(statement, function(err, result, fields) {
