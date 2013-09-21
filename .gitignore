@@ -1,5 +1,5 @@
 .DS_Store
 node_modules
 logs
-
+elasticsearch-0.90.3
 /backups/
