@@ -314,7 +314,18 @@ module.exports = function(app) {
         res.send(401,'{"status": "failed", "message": "invalid token"}');
       } else { 
       console.log("provider " + data)
-      var classObj = req.body;
+      var classObj = {};
+      var bodyObj = req.body;
+
+      classObj.classId = req.body.classId;
+      classObj.datetime = req.body.datetime;
+      (req.body.price ? classObj.price = req.body.price : classObj.price = "price");
+      (req.body.spots ? classObj.spots = req.body.spots : classObj.spots = "spots");
+      (req.body.name ? classObj.name = req.body.name : classObj.name = "name");
+      (req.body.instructor ? req.body.instructor = classObj.instructor : classObj.instructor = "instructor");
+      (req.body.image ? classObj.image = req.body.image : classObj.image = "image");
+      (req.body.daypass ? classObj.daypass = req.body.daypass : classObj.daypass = "daypass");
+      (req.body.desc ? classObj.desc = req.body.desc : classObj.desc = "`desc`");
 
       var statement = [
           'INSERT INTO scheduledClass '
@@ -323,9 +334,9 @@ module.exports = function(app) {
                        wmysql.escape(classObj.classId),
                        wmysql.escape(classObj.datetime),
                        '1',
-                       wmysql.escape( String(classObj.price) ),
+                       classObj.price,
                        'providerid',
-                       wmysql.escape( String(classObj.spots) ),
+                       classObj.spots,
                        wmysql.escape(classObj.name)
                     ].join(', ') + ' '
         , ',' + classObj.instructor + ',' + wmysql.escape(classObj.image) + ',' + classObj.daypass + ',' + wmysql.escape(classObj.desc) + ' '
@@ -338,9 +349,9 @@ module.exports = function(app) {
           if(err) {
             res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
           } else {
-            classObj.id = result.insertId;
+            bodyObj.id = result.insertId;
             memcached.setMemScheduledClass(classObj.id,function(err, scData) { });
-            res.send( classObj );
+            res.send( bodyObj );
           }
         });
       }
