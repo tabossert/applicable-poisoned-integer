@@ -508,6 +508,7 @@ module.exports = function(app) {
 
   //This used by partner panel only - TESTED
   app.del('/api/scheduledClasses/:classId', function(req, res){
+    console.log(req.params);
     try {
       check(req.header('token'), errMsg.tokenErr).notNull();
       check(req.params.classId, errMsg.classIdErr).isNumeric();
@@ -528,7 +529,7 @@ module.exports = function(app) {
           if(err || result[0][0].transMess !== 'success') {
             res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
           } else {
-            memcached.remMemKey('sc' + classId, function(err, data) { });
+            memcached.remMemKey('sc' + classObj.classId, function(err, data) { });
             res.send( classObj );
           }
         });
