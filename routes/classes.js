@@ -478,7 +478,6 @@ module.exports = function(app) {
       check(req.params.classId, errMsg.classIdErr).isNumeric();
       check(req.body.price, errMsg.priceErr).len(1,7).isDecimal();
       check(req.body.spots, errMsg.spotsErr).isNumeric();
-      check(req.body.active, errMsg.activeErr).isNumeric();
       check(req.body.dayPass, errMsg.dayPassErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
@@ -493,14 +492,13 @@ module.exports = function(app) {
         , price = req.body.price
         , spots = req.body.spots
         , instructor = req.body.instructor
-        , active = req.body.active
         , image = req.body.image
         , desc = req.body.desc
         , dayPass = req.body.dayPass;
 
         var statement = [
               'UPDATE scheduledClass sc '
-            , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ',active = ' + active + ''
+            , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ''
             , ',image = ' + wmysql.escape(image) + ',`desc` = ' + wmysql.escape(desc) + ',daypass = ' + dayPass + ' '
             , 'WHERE sc.id = ' + classId + ' AND sc.providerid = ' + data.providerid
         ].join(" ");
