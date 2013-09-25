@@ -69,17 +69,17 @@ module.exports = function(app) {
 
 
   //This used by customer and partner panel - TESTED
-  app.get('/api/classes/:classId', function(req, res){
+  app.get('/api/classes/:classid', function(req, res){
     try {
-      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.classid, errMsg.classidErr).isNumeric();
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
 
-    var classId = req.params.classId;
+    var classid = req.params.classid;
 
-    memcached.isMemClass(classId, function(err,cData) {
+    memcached.isMemClass(classid, function(err,cData) {
       if(err) {
         res.send('{"status": "failed", "message": "unable to find class: ' + err + '"}');
       } else {
@@ -90,20 +90,20 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.put('/api/classes/:classId',[middleFinger.authCheck], function(req, res){
+  app.put('/api/classes/:classid',[middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'), errMsg.tokenErr).notNull();
       check(req.body.duration, errMsg.durationErr).isNumeric();
       check(req.body.price, errMsg.priceErr).len(1,7).isDecimal();
       check(req.body.spots, errMsg.spotsErr).isNumeric();
       check(req.body.dayPass, errMsg.dayPassErr).isNumeric();
-      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.classid, errMsg.classidErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
 
-    var classId = req.params.classId
+    var classid = req.params.classid
       , name = req.body.name
       , image = req.body.image
       , instructor = req.body.instructor
@@ -117,14 +117,14 @@ module.exports = function(app) {
       'UPDATE classes c '
       , 'SET name = ' + wmysql.escape(name) + ',image = ' + wmysql.escape(image) + ',instructor = ' + wmysql.escape(instructor) + ' '
       , ',duration = ' + duration + ',price = ' + price + ',daypass = ' + dayPass + ',spots = ' + spots + ',`desc` = ' + wmysql.escape(description) + ' '
-      , 'WHERE c.id = ' + classId + ' AND c.providerid = ' + req.eData.providerid
+      , 'WHERE c.id = ' + classid + ' AND c.providerid = ' + req.eData.providerid
     ].join(" ");
 
     wmysql.query(statement, function(err, result, fields) {
       if(err || result.affectedRows < 1) {
         res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
       } else {
-        memcached.setMemClass(classId, function(err, cData) { });
+        memcached.setMemClass(classid, function(err, cData) { });
         res.send( req.body );
       }
     });
@@ -173,8 +173,8 @@ module.exports = function(app) {
         if(err || result.affectedRows < 1) {
           res.send(400,'{"status": "failed", "message": "insert of class into classes table failed: ' + err + '"}');
         } else {
-          classesObj.classId = result.insertId;
-          memcached.setMemClass(classId, function(err, cData) { });
+          classesObj.classid = result.insertId;
+          memcached.setMemClass(classid, function(err, cData) { });
           res.send( classesObj );
         }
       });
@@ -183,10 +183,10 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.del('/api/classes/:classId/:cancelFuture',[middleFinger.authCheck], function(req, res){
+  app.del('/api/classes/:classid/:cancelFuture',[middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'), errMsg.tokenErr).notNull();
-      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.classid, errMsg.classidErr).isNumeric();
       check(req.params.cancelFuture, errMsg.cancelFutureErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
@@ -194,22 +194,22 @@ module.exports = function(app) {
     }
 
     var classObj = {};
-    classObj.classId = req.params.classId;
+    classObj.classid = req.params.classid;
     classObj.cancelFuture = req.params.cancelFuture;
 
-    var statement = 'CALL cancelClass(' + classObj.classId + ',' + classObj.cancelFuture + ',@transMess)';
+    var statement = 'CALL cancelClass(' + classObj.classid + ',' + classObj.cancelFuture + ',@transMess)';
 
     wmysql.query(statement, function(err, result, fields) {
       console.log(result);
       if(err || result[0][0].transMess !== 'success') {
         res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
       } else {
-        memcached.isMemClass(classObj.classId, function(err, data) {
+        memcached.isMemClass(classObj.classid, function(err, data) {
           data.scheduledClasses.forEach(function(scID) {
             memcached.remMemKey('sc' + scID.id, function(err, data) { });
           });
         });
-        memcached.remMemKey('c' + classObj.classId, function(err, data) { });
+        memcached.remMemKey('c' + classObj.classid, function(err, data) { });
         res.send( classObj );
       }
     });
@@ -249,17 +249,17 @@ module.exports = function(app) {
 
 
   //This used by customer and partner panel - TESTED
-  app.get('/api/scheduledClasses/:classId',[middleFinger.authCheck], function(req, res) {
+  app.get('/api/scheduledClasses/:classid',[middleFinger.authCheck], function(req, res) {
     try {
-      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.classid, errMsg.classidErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
 
-    var classId = req.params.classId;
+    var classid = req.params.classid;
 
-    memcached.isMemScheduledClass(classId, function(err, scdata) {
+    memcached.isMemScheduledClass(classid, function(err, scdata) {
       if(err) {
         return res.send(400,'{"status": "failed", "message":Unable to retrieve class: ' + err + '"');
       }
@@ -286,13 +286,10 @@ module.exports = function(app) {
     }
     
     var classObj = extend(true, {}, {
-      price: 'price',
-      spots: 'spots',
-      name : 'name',
-      instructor: 'instructor',
-      image: 'image',
-      daypass: 'daypass',
-      desc: '`desc`'
+      price: '`price`',
+      spots: '`spots`',
+      instructor: '`instructor`',
+      daypass: '`daypass`',
     }, req.body);
     
     classObj.classid = req.body.classid;
@@ -307,10 +304,15 @@ module.exports = function(app) {
             classObj.price,
             'providerid',
             classObj.spots,
-            wmysql.escape(classObj.name)
-        ].join(', ') + ' '
-      , ',' + classObj.instructor + ',' + wmysql.escape(classObj.image) + ',' + classObj.daypass + ',' + wmysql.escape(classObj.desc) + ' '
-      , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classId) + ' AND providerid = ' + req.eData.providerid
+            classObj.name ? wmysql.escape(classObj.name) : '`name`'
+        ].join(', ') + ', '
+      , [
+          classObj.instructor,
+          classObj.image ? wmysql.escape(classObj.image) : '`image`',
+          classObj.daypass,
+          classObj.desc ? wmysql.escape(classObj.desc) : '`desc`'
+         ].join(', ') + ' '
+      , 'FROM classes WHERE id = ' + wmysql.escape(classObj.classid) + ' AND providerid = ' + req.eData.providerid
     ].join(" ");
 
     console.log(statement);
@@ -328,18 +330,18 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.get('/api/scheduledClasses/:classId/participants/',[middleFinger.authCheck], function(req, res) {
+  app.get('/api/scheduledClasses/:classid/participants/',[middleFinger.authCheck], function(req, res) {
     try {
-      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.classid, errMsg.classidErr).isNumeric();
       check(req.header('token'), errMsg.tokenErr).notNull();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
 
-    var classId = req.params.classId;
+    var classid = req.params.classid;
 
-    memcached.isMemScheduledClass(classId, function(err, scdata) {
+    memcached.isMemScheduledClass(classid, function(err, scdata) {
       if(err) {
         return res.send(400,'{"status": "failed", "message":Unable to retrieve class: ' + err + '"');
       }
@@ -349,7 +351,7 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.put('/api/scheduledClasses/:classId/participants/:participantId', [middleFinger.authCheck], function(req, res) {
+  app.put('/api/scheduledClasses/:classid/participants/:participantId', [middleFinger.authCheck], function(req, res) {
     
     try {
       check(req.header('token'), errMsg.tokenErr).notNull();
@@ -363,7 +365,7 @@ module.exports = function(app) {
     var participantId = req.params.participantId;
 
     var particObj = {
-      classId: req.params.classId,
+      classid: req.params.classid,
       participantId: req.params.participantId,
       id: req.params.participantId,
           
@@ -389,7 +391,7 @@ module.exports = function(app) {
       if(err) {
         res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
       } else {
-        memcached.setMemScheduledClass(particObj.classId,function(err, scData) { });
+        memcached.setMemScheduledClass(particObj.classid,function(err, scData) { });
         res.send( particObj );
       }
     });
@@ -397,25 +399,25 @@ module.exports = function(app) {
 
 
   //This used by customers only - TESTED
-  app.get('/api/classes/:classId/scheduledClasses/', function(req, res){
+  app.get('/api/classes/:classid/scheduledClasses/', function(req, res){
     try {
-      check(req.params.classId, errMsg.classIdErr).isNumeric(); 
+      check(req.params.classid, errMsg.classidErr).isNumeric(); 
     } catch (e) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
 
-    var classId = req.params.classId;
+    var classid = req.params.classid;
     var scArr = [];
 
-    memcached.isMemClass(classId, function(err, data) {
+    memcached.isMemClass(classid, function(err, data) {
       if (err || data.scheduledClasses.length < 1) {
-        res.send(400,'{"status": "failed", "message":"no scheduled classes found matching this classId"}');
+        res.send(400,'{"status": "failed", "message":"no scheduled classes found matching this classid"}');
       }
       var dataLen = data.scheduledClasses.length;
       var i = 0;
-      data.scheduledClasses.forEach(function(classId) {
-        memcached.isMemScheduledClass(classId.id, function(err, scData) {
+      data.scheduledClasses.forEach(function(classid) {
+        memcached.isMemScheduledClass(classid.id, function(err, scData) {
           scArr.push(scData.classInfo);
           i = i + 1;
           if(dataLen == i) {
@@ -428,10 +430,10 @@ module.exports = function(app) {
 
 
   //This used by partner panel only - TESTED
-  app.put('/api/scheduledClasses/:classId', [middleFinger.authCheck], function(req, res) {
+  app.put('/api/scheduledClasses/:classid', [middleFinger.authCheck], function(req, res) {
     try {
       check(req.header('token'), errMsg.tokenErr).notNull();
-      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.classid, errMsg.classidErr).isNumeric();
       check(req.body.price, errMsg.priceErr).len(1,7).isDecimal();
       check(req.body.spots, errMsg.spotsErr).isNumeric();
       check(req.body.dayPass, errMsg.dayPassErr).isNumeric();
@@ -440,7 +442,7 @@ module.exports = function(app) {
       return;
     }
 
-    var classId = req.params.classId
+    var classid = req.params.classid
     , price = req.body.price
     , spots = req.body.spots
     , instructor = req.body.instructor
@@ -452,40 +454,40 @@ module.exports = function(app) {
           'UPDATE scheduledClass sc '
         , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ''
         , ',image = ' + wmysql.escape(image) + ',`desc` = ' + wmysql.escape(desc) + ',daypass = ' + dayPass + ' '
-        , 'WHERE sc.id = ' + classId + ' AND sc.providerid = ' + req.eData.providerid
+        , 'WHERE sc.id = ' + classid + ' AND sc.providerid = ' + req.eData.providerid
     ].join(" ");
 
     wmysql.query(statement, function(err, result, fields) {
       if(err || result.affectedRows < 1) {
         res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}');
       } else {
-        memcached.setMemScheduledClass(classId,function(err, scData) { });
+        memcached.setMemScheduledClass(classid,function(err, scData) { });
         res.send( req.body );
       }
     }); 
   });
 
   //This used by partner panel only - TESTED
-  app.del('/api/scheduledClasses/:classId', [middleFinger.authCheck], function(req, res){
+  app.del('/api/scheduledClasses/:classid', [middleFinger.authCheck], function(req, res){
     console.log(req.params);
     try {
       check(req.header('token'), errMsg.tokenErr).notNull();
-      check(req.params.classId, errMsg.classIdErr).isNumeric();
+      check(req.params.classid, errMsg.classidErr).isNumeric();
     } catch (e) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
 
     var classObj = {};
-    classObj.classId = req.params.classId;
+    classObj.classid = req.params.classid;
 
-    var statement = 'CALL cancelScheduledClass(' + classObj.classId + ',@transMess)';
+    var statement = 'CALL cancelScheduledClass(' + classObj.classid + ',@transMess)';
 
     wmysql.query(statement, function(err, result, fields) {
       if(err || result[0][0].transMess !== 'success') {
         res.send(400,'{"status": "failed", "message": "' + result[0][0].transMess + '"}');
       } else {
-        memcached.remMemKey('sc' + classObj.classId, function(err, data) { });
+        memcached.remMemKey('sc' + classObj.classid, function(err, data) { });
         res.send( classObj );
       }
     });
