@@ -9,35 +9,32 @@
 var config = config = require('config')
   , moment = require('moment')
   , S = require('string')
-  //, mongoose = require("mongoose")
   , geo = require('geo')
   , geoip = require('geoip-lite')
   , check = require('validator').check
   , sanitize = require('validator').sanitize
+  , es = require('../lib/elasticsearch');
 
 var dbConn = require('../lib/mysqlConn');
 var rmysql = dbConn.rmysql;
 var wmysql = dbConn.wmysql;
 var amysql = dbConn.amysql;
 
-//MongoDB Database
-//mongoose.connect(config.Mongo.HOST);
 
-// Schema 
-/*var Schema = mongoose.Schema;
-
-var cordinates = new Schema({
-  gymid : Number,
-  loc : {lat: Number, lng: Number}
-});
-
-cordinates.index ({
-  loc : "2d"
-});
-
-var cordinatesModel = mongoose.model('cordinates', cordinates);
-*/
 module.exports = function(app) {
+
+   es.indexProvider(22,function(err, obj) {
+    console.log(err);
+    console.log(obj);
+   });
+
+   keywords = ['yoga'];
+  
+   es.search(keywords,'1',37.88,-122.05,function(err,data) {
+    console.log(err);
+    console.log(data.hits[0]._source)
+   });
+
     // Route returns providers using zip or state.  This would be used on the home page before signup
     app.get('/api/gymSearch/:type/:value/:state', function(req, res){
       if(req.params.type == 'zipcode') {
@@ -168,7 +165,7 @@ module.exports = function(app) {
     });*/
 
 
-    app.get('/api/gymInfo/:gymId', function(req, res){
+    /*app.get('/api/gymInfo/:gymId', function(req, res){
       try {
         check(req.params.gymId).notNull().isNumeric()
       } catch (e) {
@@ -182,6 +179,6 @@ module.exports = function(app) {
           res.send(result);
         }
       });
-    });
+    });*/
 
 }

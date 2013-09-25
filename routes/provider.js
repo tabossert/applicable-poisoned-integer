@@ -10,7 +10,7 @@ var config = config = require('config')
   , check = require('validator').check
   , sanitize = require('validator').sanitize
   , errMsg = require('../lib/errMsg')
-  , es = require('../lib/elasticsearch')
+  //, es = require('../lib/elasticsearch')
   , util = require('util');
 
 
@@ -20,6 +20,7 @@ var rmysql = dbConn.rmysql;
 var wmysql = dbConn.wmysql;
 
 var memcached = require('../lib/memcached');
+var middleFinger = require('../lib/middleFinger');
 
 var cloudfiles = require('cloudfiles');
 var CFconfig = {
@@ -132,7 +133,7 @@ module.exports = function(app) {
   });
 
 
-  app.post('/api/provider/:providerId/imageUpdate/', function(req, res){
+  app.post('/api/provider/:providerId/imageUpdate/', [middleFinger.authCheck],  function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -142,46 +143,40 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
 
-        var iName = req.body.iName
-        , image = req.body.image;
+    var iName = req.body.iName
+    , image = req.body.image;
 
-        var statement = [
-              'UPDATE providers p SET p.image = ' + wmysql.escape(CFcontainer + iName) + ' '
-            , 'WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
-        ].join(" ");
+    var statement = [
+          'UPDATE providers p SET p.image = ' + wmysql.escape(CFcontainer + iName) + ' '
+        , 'WHERE ' + req.eData.groupid + ' = 1 AND p.id = ' + req.eData.providerid
+    ].join(" ");
 
-        fs.writeFile('images/' + req.body.iName, new Buffer(req.body.image, "base64"), function(err) {
-          CFclient.setAuth(function (err) {
+    fs.writeFile('images/' + req.body.iName, new Buffer(req.body.image, "base64"), function(err) {
+      CFclient.setAuth(function (err) {
+        if(err) {
+          res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
+        } else {
+          CFclient.addFile('providerImages', { remote: req.body.iName, local: 'images/' + req.body.iName }, function (err, uploaded) {
             if(err) {
               res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
             } else {
-              CFclient.addFile('providerImages', { remote: req.body.iName, local: 'images/' + req.body.iName }, function (err, uploaded) {
-                if(err) {
-                  res.send(400,'{"status": "failed", "message": "image upload failed: ' + err + '"}');
+              wmysql.query(statement, function(err, result, fields) {
+                if(err || result.affectedRows < 1) {
+                  res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
                 } else {
-                  wmysql.query(statement, function(err, result, fields) {
-                    if(err || result.affectedRows < 1) {
-                      res.send(400,'{"status": "failed", "message": "sql error occured: ' + err + '"}'); 
-                    } else {
-                      res.send('{"path": "' + CFcontainer + req.body.iName + '"}');
-                    }
-                  });
+                  res.send('{"path": "' + CFcontainer + req.body.iName + '"}');
                 }
               });
             }
           });
-        });
-      }
+        }
+      });
     });
   });
 
 
-  app.get('/api/provider/:providerId', function(req, res){
+  /*app.get('/api/provider/:providerId', function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric(); 
@@ -199,10 +194,10 @@ module.exports = function(app) {
         res.send( data );
       }
     });
-  });
+  });*/
 
 
-  app.put('/api/provider/:providerId', function(req, res){
+  app.put('/api/provider/:providerId', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -211,76 +206,70 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
 
-        var providerId = req.params.providerId
-        , name = req.body.name
-        , address = req.body.address
-        , city = req.body.city
-        , state = req.body.state
-        , zipcode = req.body.zipcode
-        , phone = req.body.phone
-        , email = req.body.email
-        , contact = req.body.contact
-        , facebook =  req.body.facebook
-        , twitter = req.body.twitter
-        , googleplus = req.body.googleplus
-        , url = req.body.url
-        , mondayOpen = req.body.mondayOpen
-        , mondayClose = req.body.mondayClose
-        , tuesdayOpen = req.body.tuesdayOpen
-        , tuesdayClose = req.body.tuesdayClose
-        , wednesdayOpen = req.body.wednesdayOpen
-        , wednesdayClose = req.body.wednesdayClose
-        , thursdayOpen = req.body.thursdayOpen
-        , thursdayClose = req.body.thursdayClose
-        , fridayOpen = req.body.fridayOpen
-        , fridayClose = req.body.fridayClose
-        , saturdayOpen = req.body.saturdayOpen
-        , saturdayClose = req.body.saturdayClose
-        , sundayOpen = req.body.sundayOpen
-        , sundayClose = req.body.sundayClose;
+    var providerId = req.params.providerId
+    , name = req.body.name
+    , address = req.body.address
+    , city = req.body.city
+    , state = req.body.state
+    , zipcode = req.body.zipcode
+    , phone = req.body.phone
+    , email = req.body.email
+    , contact = req.body.contact
+    , facebook =  req.body.facebook
+    , twitter = req.body.twitter
+    , googleplus = req.body.googleplus
+    , url = req.body.url
+    , mondayOpen = req.body.mondayOpen
+    , mondayClose = req.body.mondayClose
+    , tuesdayOpen = req.body.tuesdayOpen
+    , tuesdayClose = req.body.tuesdayClose
+    , wednesdayOpen = req.body.wednesdayOpen
+    , wednesdayClose = req.body.wednesdayClose
+    , thursdayOpen = req.body.thursdayOpen
+    , thursdayClose = req.body.thursdayClose
+    , fridayOpen = req.body.fridayOpen
+    , fridayClose = req.body.fridayClose
+    , saturdayOpen = req.body.saturdayOpen
+    , saturdayClose = req.body.saturdayClose
+    , sundayOpen = req.body.sundayOpen
+    , sundayClose = req.body.sundayClose;
 
-        var statement = [
-              'UPDATE providers p set p.name = ' + wmysql.escape(name) + ',p.address = ' + wmysql.escape(address) + ',p.city = ' + wmysql.escape(city) + ','
-            , 'p.state = ' + wmysql.escape(state) + ',p.zipcode = ' + zipcode + ',p.phone = ' + wmysql.escape(phone) + ','
-            , 'p.email = ' + wmysql.escape(email) + ',p.contact = ' + wmysql.escape(contact) + ',p.facebook = ' + wmysql.escape(facebook) + ','
-            , 'p.twitter = ' + wmysql.escape(twitter) + ',p.googleplus = ' + wmysql.escape(googleplus) + ',p.url = ' + wmysql.escape(url) + ',p.complete = true'
-            , 'p.lat = %s,p.lon = %s WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
-        ].join(" ");
+    var statement = [
+          'UPDATE providers p set p.name = ' + wmysql.escape(name) + ',p.address = ' + wmysql.escape(address) + ',p.city = ' + wmysql.escape(city) + ','
+        , 'p.state = ' + wmysql.escape(state) + ',p.zipcode = ' + zipcode + ',p.phone = ' + wmysql.escape(phone) + ','
+        , 'p.email = ' + wmysql.escape(email) + ',p.contact = ' + wmysql.escape(contact) + ',p.facebook = ' + wmysql.escape(facebook) + ','
+        , 'p.twitter = ' + wmysql.escape(twitter) + ',p.googleplus = ' + wmysql.escape(googleplus) + ',p.url = ' + wmysql.escape(url) + ',p.complete = true'
+        , 'p.lat = %s,p.lon = %s WHERE ' + req.eData.groupid + ' = 1 AND p.id = ' + req.eData.providerid
+    ].join(" ");
 
-        var statement2 = [
-              'UPDATE hours h set mondayOpen = ' + wmysql.escape(mondayOpen) + ',mondayClose = ' + wmysql.escape(mondayClose) + ','
-            , 'tuesdayOpen = ' + wmysql.escape(tuesdayOpen) + ',tuesdayClose = ' + wmysql.escape(tuesdayClose) + ', wednesdayOpen = ' + wmysql.escape(wednesdayOpen) + ',wednesdayClose = ' + wmysql.escape(wednesdayClose) + ','
-            , 'thursdayOpen = ' + wmysql.escape(thursdayOpen) + ',thursdayClose = ' + wmysql.escape(thursdayClose) + ',fridayOpen = ' + wmysql.escape(fridayOpen) + ',fridayClose = ' + wmysql.escape(fridayClose) + ','
-            , 'saturdayOpen = ' + wmysql.escape(saturdayOpen) + ',saturdayClose = ' + wmysql.escape(saturdayClose) + ',sundayOpen = ' + wmysql.escape(sundayOpen) + ',sundayClose = ' + wmysql.escape(sundayClose) + ' '
-            , 'WHERE ' + data.groupid + ' = 1 AND h.providerid = ' + data.providerid
-        ].join(" ");        
+    var statement2 = [
+          'UPDATE hours h set mondayOpen = ' + wmysql.escape(mondayOpen) + ',mondayClose = ' + wmysql.escape(mondayClose) + ','
+        , 'tuesdayOpen = ' + wmysql.escape(tuesdayOpen) + ',tuesdayClose = ' + wmysql.escape(tuesdayClose) + ', wednesdayOpen = ' + wmysql.escape(wednesdayOpen) + ',wednesdayClose = ' + wmysql.escape(wednesdayClose) + ','
+        , 'thursdayOpen = ' + wmysql.escape(thursdayOpen) + ',thursdayClose = ' + wmysql.escape(thursdayClose) + ',fridayOpen = ' + wmysql.escape(fridayOpen) + ',fridayClose = ' + wmysql.escape(fridayClose) + ','
+        , 'saturdayOpen = ' + wmysql.escape(saturdayOpen) + ',saturdayClose = ' + wmysql.escape(saturdayClose) + ',sundayOpen = ' + wmysql.escape(sundayOpen) + ',sundayClose = ' + wmysql.escape(sundayClose) + ' '
+        , 'WHERE ' + req.eData.groupid + ' = 1 AND h.providerid = ' + req.eData.providerid
+    ].join(" ");        
 
-        geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lat,lon) {
-          wmysql.query(util.format(statement, lat, lon), function(err, result, fields) {
+    geo.geocoder(geo.google, address + ',' + city + ',' + state, false,  function(fAddress,lat,lon) {
+      wmysql.query(util.format(statement, lat, lon), function(err, result, fields) {
+        if(err || result.affectedRows < 1) {
+          res.send(400,'{"status": "failed", "message": "update to row failed"}');
+        } else {
+          wmysql.query(statement2, function(err, result, fields) {
             if(err || result.affectedRows < 1) {
-              res.send(400,'{"status": "failed", "message": "update to row failed"}');
+              res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
             } else {
-              wmysql.query(statement2, function(err, result, fields) {
-                if(err || result.affectedRows < 1) {
-                  res.send(400,'{"status": "failed", "message": "update to hours table failed"}');
-                } else {
-                  res.send( req.body );
-                }
-              });
+              res.send( req.body );
             }
-          }); 
-        });
-      }
+          });
+        }
+      }); 
     });
   });
 
 
-  app.post('/api/provider/:providerId/employees/', function(req, res){
+  app.post('/api/provider/:providerId/employees/', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -289,40 +278,35 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        require('crypto').randomBytes(48, function(ex, buf) {
-          var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
-        });
 
-        var username = req.body.username
-        , firstName = req.body.firstName
-        , lastName = req.body.lastName
-        , title = req.body.title
-        , instructor = req.body.instructor;
+    require('crypto').randomBytes(48, function(ex, buf) {
+      var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+    });
 
-        var statement = [
-              'INSERT INTO employees (providerid,token,username,password,first_name,last_name,groupid,lastlogin,title,instructor) '
-            , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
-            , ',' + wmysql.escape(title) + ',' + instructor + ' '
-            , 'FROM providers p WHERE ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
-        ].join(" ");
+    var username = req.body.username
+    , firstName = req.body.firstName
+    , lastName = req.body.lastName
+    , title = req.body.title
+    , instructor = req.body.instructor;
 
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
-          } else {
-            res.send( req.body );
-          }
-        });
+    var statement = [
+          'INSERT INTO employees (providerid,token,username,password,first_name,last_name,groupid,lastlogin,title,instructor) '
+        , 'SELECT id,"' + token + '",' + wmysql.escape(username) +  ',' + wmysql.escape(firstName) + ',' + wmysql.escape(lastName) + ',0,NOW() '
+        , ',' + wmysql.escape(title) + ',' + instructor + ' '
+        , 'FROM providers p WHERE ' + req.eData.groupid + ' = 1 AND p.id = ' + req.eData.providerid
+    ].join(" ");
+
+    wmysql.query(statement, function(err, result, fields) {
+      if(err || result.affectedRows < 1) {
+        res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
+      } else {
+        res.send( req.body );
       }
     });
   });
 
 
-  app.get('/api/provider/:providerId/employees/', function(req, res){
+  app.get('/api/provider/:providerId/employees/', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -330,30 +314,25 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
+
+    var providerId = req.params.employeeId; 
+
+    var statement = [
+          'SELECT id,providerid,username,first_name,last_name,groupid,title,instructor '
+        , 'FROM employees WHERE providerid = ' + req.eData.providerid
+    ].join(" ");
+
+    rmysql.query(statement, function(err, result, fields) {
       if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        var providerId = req.params.employeeId; 
-
-        var statement = [
-              'SELECT id,providerid,username,first_name,last_name,groupid,title,instructor '
-            , 'FROM employees WHERE providerid = ' + data.providerid
-        ].join(" ");
-
-        rmysql.query(statement, function(err, result, fields) {
-          if(err) {
-            res.send(400,'{"status": "failed", "message": "error occured with employees table"}');
-          } else {
-            res.send( result );
-          }
-        });
+        res.send(400,'{"status": "failed", "message": "error occured with employees table"}');
+      } else {
+        res.send( result );
       }
     });
   });
 
 
-  app.put('/api/provider/:providerId/employees/:employeeId', function(req, res){
+  app.put('/api/provider/:providerId/employees/:employeeId', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -362,33 +341,28 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
-        require('crypto').randomBytes(48, function(ex, buf) {
-          var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
-        });
 
-        var employeeId = req.params.employeeId
-        , firstName = req.body.firstName
-        , lastName = req.body.lastName
-        , title = req.body.title
-        , instructor = req.body.instructor;
+    require('crypto').randomBytes(48, function(ex, buf) {
+      var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
+    });
 
-        var statement = [
-              'UPDATE employees SET first_name = ' + wmysql.escape(firstName) + ',last_name = ' + wmysql.escape(lastName) + ','
-            , 'title = ' + wmysql.escape(title) + ',instructor = ' + instructor + ' '
-            , 'WHERE id = ' + employeeId + ' AND ' + data.groupid + ' = 1 AND p.id = ' + data.providerid
-        ].join(" ");
+    var employeeId = req.params.employeeId
+    , firstName = req.body.firstName
+    , lastName = req.body.lastName
+    , title = req.body.title
+    , instructor = req.body.instructor;
 
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
-          } else {
-            res.send( req.body );
-          }
-        });
+    var statement = [
+          'UPDATE employees SET first_name = ' + wmysql.escape(firstName) + ',last_name = ' + wmysql.escape(lastName) + ','
+        , 'title = ' + wmysql.escape(title) + ',instructor = ' + instructor + ' '
+        , 'WHERE id = ' + employeeId + ' AND ' + req.eData.groupid + ' = 1 AND p.id = ' + req.eData.providerid
+    ].join(" ");
+
+    wmysql.query(statement, function(err, result, fields) {
+      if(err || result.affectedRows < 1) {
+        res.send(400,'{"status": "failed", "message": "adding employee row failed"}');
+      } else {
+        res.send( req.body );
       }
     });
   });
@@ -403,47 +377,41 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {  
 
-        var empObj = {};
-        empObj.providerId = req.params.providerId;
-        empObj.employeeId = req.params.employeeId;
+    var empObj = {};
+    empObj.providerId = req.params.providerId;
+    empObj.employeeId = req.params.employeeId;
 
-        var npass = req.body.npass
-        , cpass = req.body.cpass;
+    var npass = req.body.npass
+    , cpass = req.body.cpass;
 
-        var statement = [
-              'SELECT password FROM employees '
-            , 'WHERE id = ' + data.id
-        ].join(" ");
+    var statement = [
+          'SELECT password FROM employees '
+        , 'WHERE id = ' + data.id
+    ].join(" ");
 
-        var statement2 = [
-              'UPDATE employees SET password = ' + wmysql.escape(req.body.npass) + ' '
-            , 'WHERE id = ' + data.id
-        ].join(" ");
+    var statement2 = [
+          'UPDATE employees SET password = ' + wmysql.escape(req.body.npass) + ' '
+        , 'WHERE id = ' + data.id
+    ].join(" ");
 
-        rmysql.query(statement, function(err, result, fields) {
-          if(result.password == req.body.cpass) {
-            wmysql.query(statement2, function(err, result, fields) {
-              if(err || result.affectedRows < 1) {
-                res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
-              } else {
-                res.send( empObj );
-              }
-            });
+    rmysql.query(statement, function(err, result, fields) {
+      if(result.password == req.body.cpass) {
+        wmysql.query(statement2, function(err, result, fields) {
+          if(err || result.affectedRows < 1) {
+            res.send(400,'{"status": "failed", "message": "update to employee table failed"}');
           } else {
-            res.send(400,'{"status": "failed", "message":"Incorrect current password"}');
+            res.send( empObj );
           }
         });
+      } else {
+        res.send(400,'{"status": "failed", "message":"Incorrect current password"}');
       }
     });
   });
 
 
-  app.del('/api/provider/:providerId/employees/:employeeId/', function(req, res){
+  app.del('/api/provider/:providerId/employees/:employeeId/', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -452,31 +420,25 @@ module.exports = function(app) {
       res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else { 
 
-        var employeeId = req.params.employeeId;
+    var employeeId = req.params.employeeId;
 
-        var statement = [
-              'DELETE FROM employees e'
-            , 'WHERE e.id = ' + employeeId + ' AND ' + data.groupid + ' = 1 AND e.providerid = ' + data.providerid 
-        ].join(" ");
+    var statement = [
+          'DELETE FROM employees e'
+        , 'WHERE e.id = ' + employeeId + ' AND ' + req.eData.groupid + ' = 1 AND e.providerid = ' + req.eData.providerid 
+    ].join(" ");
 
-        wmysql.query(statement, function(err, result, fields) {
-          if(err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
-          } else {
-            res.send( req.params );
-          }
-        });
+    wmysql.query(statement, function(err, result, fields) {
+      if(err || result.affectedRows < 1) {
+        res.send(400,'{"status": "failed", "message": "delete of employee row failed"}');
+      } else {
+        res.send( req.params );
       }
     });
   });
 
 
-  app.get('/api/provider/:providerId/balance/', function(req, res){
+  app.get('/api/provider/:providerId/balance/', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -484,30 +446,24 @@ module.exports = function(app) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
+
+    var statement = [
+          'SELECT balance '
+        , 'FROM providerBilling pb '
+        , 'WHERE pb.providerid = ' + req.eData.providerid
+    ].join(" ");
+
+    rmysql.query(statement, function(err, result, fields) {
+      if(err || !result) {
+        res.send(400,'{"status": "failed", "message": "unable to retrieve balance"}');
       } else {
-
-        var statement = [
-              'SELECT balance '
-            , 'FROM providerBilling pb '
-            , 'WHERE pb.providerid = ' + data.providerid
-        ].join(" ");
-
-        rmysql.query(statement, function(err, result, fields) {
-          if(err || !result) {
-            res.send(400,'{"status": "failed", "message": "unable to retrieve balance"}');
-          } else {
-            res.send( result );
-          }
-        });
+        res.send( result );
       }
     });
   });
 
   
-  app.get('/api/provider/:providerId/disbursement/', function(req, res){
+  app.get('/api/provider/:providerId/disbursement/', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -515,29 +471,23 @@ module.exports = function(app) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
+
+    var statement = [
+          'SELECT d.paymenttype,d.paylimit,d.type '
+        , 'FROM disbursement d WHERE d.providerid = ' + req.eData.providerid
+    ].join(" ");
+
+    rmysql.query(statement, function(err, result, fields) {
+      if (err || !result) {
+        res.send(400,'{"status": "failed", "message": "unable to retrieve disbursement"}');
       } else {
-
-        var statement = [
-              'SELECT d.paymenttype,d.paylimit,d.type '
-            , 'FROM disbursement d WHERE d.providerid = ' + data.providerid
-        ].join(" ");
-
-        rmysql.query(statement, function(err, result, fields) {
-          if (err || !result) {
-            res.send(400,'{"status": "failed", "message": "unable to retrieve disbursement"}');
-          } else {
-            res.send( result );
-          }
-        });
+        res.send( result );
       }
     });
   });
 
 
-  app.put('/api/provider/:providerId/disbursement/', function(req, res){
+  app.put('/api/provider/:providerId/disbursement/', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric();
@@ -548,28 +498,22 @@ module.exports = function(app) {
       res.send('{"status": "failed", "message":"' + e.message + '"}');
       return;
     }
-    memcached.isMemAuth(req.header('token'), function(err,data) {
-      if(err) {
-        res.send(401,'{"status": "failed", "message": "invalid token"}');
-      } else {   
 
-        var paymentType = req.body.paymentType
-        , payLimit = req.body.payLimit
-        , type = req.body.type;
+    var paymentType = req.body.paymentType
+    , payLimit = req.body.payLimit
+    , type = req.body.type;
 
-        var statement = [
-              'UPDATE disbursement d '
-            , 'SET d.paymenttype = ' + paymentType + ',d.paylimit = ' + payLimit + ',d.type = ' + type + ' '
-            , 'WHERE ' + data.groupid + ' = 1 AND d.providerid = ' + data.providerid
-        ].join(" ");
+    var statement = [
+          'UPDATE disbursement d '
+        , 'SET d.paymenttype = ' + paymentType + ',d.paylimit = ' + payLimit + ',d.type = ' + type + ' '
+        , 'WHERE ' + req.eData.groupid + ' = 1 AND d.providerid = ' + req.eData.providerid
+    ].join(" ");
 
-        wmysql.query(statement, function(err, result, fields) {
-          if (err || result.affectedRows < 1) {
-            res.send(400,'{"status": "failed", "message": "update to disbursement row failed"}');
-          } else {
-            res.send( req.body );
-          }
-        });
+    wmysql.query(statement, function(err, result, fields) {
+      if (err || result.affectedRows < 1) {
+        res.send(400,'{"status": "failed", "message": "update to disbursement row failed"}');
+      } else {
+        res.send( req.body );
       }
     });
   });  

@@ -19,7 +19,7 @@ desc "development"
 task :development do
 # skip using nave on production server
   set :use_nave, false
-  set :branch, 'master'                                     #default
+  set :branch, 'provider-employees'                                     #default
   set :user, 'applicable'
 
   set :deploy_to, "/var/node/#{application}"   #capper defaults to "/var/app/#{application}"
