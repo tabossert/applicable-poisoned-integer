@@ -176,7 +176,7 @@ module.exports = function(app) {
   });
 
 
-  /*app.get('/api/provider/:providerId', function(req, res){
+  app.get('/api/provider/:providerId', [middleFinger.authCheck], function(req, res){
     try {
       check(req.header('token'),errMsg.tokenErr).notNull();
       check(req.params.providerId, errMsg.providerIdErr).isNumeric(); 
@@ -187,14 +187,34 @@ module.exports = function(app) {
 
     var providerId = req.params.providerId;
 
-    es.getProvider(providerId, function(err, data) {
+  var statement = [
+        'SELECT p.id AS providerid,p.name,p.address,p.city,p.state,p.zipcode,p.phone,p.contact,'
+      , 'p.email,p.image,p.facebook,p.twitter,p.googleplus,p.url,'
+      , 'h.mondayOpen,h.mondayClose,h.tuesdayOpen,h.tuesdayClose,h.wednesdayOpen,h.wednesdayClose,h.thursdayOpen,'
+      , 'h.thursdayOpen,h.thursdayClose,h.fridayOpen,h.fridayClose,h.saturdayOpen,h.saturdayClose,h.sundayOpen,h.sundayClose '
+      , 'FROM hours h INNER JOIN '
+      , 'providers p ON h.providerid = p.id WHERE p.id = ' + providerId
+  ].join(" ");
+
+    rmysql.query(statement, function(err, result, fields) {
+      if(err) {
+        res.send(400,'{"status": "failed", "message": "error occured with employees table"}');
+      } else {
+        res.send( result );
+      }
+    });
+
+    /*es.getProvider(providerId, function(err, data) {
       if(err) {
         res.send(401, '{"status": "failed", "message": "' + err + '"}');
       } else {
         res.send( data );
       }
-    });
-  });*/
+    });*/
+
+   
+
+  });
 
 
   app.put('/api/provider/:providerId', [middleFinger.authCheck], function(req, res){
