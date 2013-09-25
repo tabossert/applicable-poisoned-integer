@@ -448,11 +448,14 @@ module.exports = function(app) {
     , instructor = req.body.instructor
     , image = req.body.image
     , desc = req.body.desc
-    , dayPass = req.body.dayPass;
+    , dayPass = req.body.dayPass
+    , datetime = req.body.datetime;
 
     var statement = [
           'UPDATE scheduledClass sc '
-        , 'SET spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + price + ''
+        , 'SET '
+        , 'datetime = ' + wmysql.escape(datetime)
+        , ',spots = ' + spots + ',instructor = ' + wmysql.escape(instructor) + ',price = ' + wmysql.escape(price) + ''
         , ',image = ' + wmysql.escape(image) + ',`desc` = ' + wmysql.escape(desc) + ',daypass = ' + dayPass + ' '
         , 'WHERE sc.id = ' + classid + ' AND sc.providerid = ' + req.eData.providerid
     ].join(" ");
