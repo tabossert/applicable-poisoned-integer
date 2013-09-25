@@ -10,6 +10,7 @@ var config = config = require('config')
   , check = require('validator').check
   , errMsg = require('../lib/errMsg')
   , sanitize = require('validator').sanitize
+  , extend = require('node.extend');
 
 
 var dbConn = require('../lib/mysqlConn');
@@ -231,6 +232,7 @@ module.exports = function(app) {
           'SELECT sc.id,sc.classid,sc.active,sc.price,sc.spots,sc.datetime,sc.name'
         , 'FROM scheduledClass sc '
         , 'WHERE sc.providerid = ' + req.eData.providerid
+        , 'AND active = true'
         , ((start) ? ' AND sc.datetime >= ' + rmysql.escape(start) : '')
         , ((end) ? ' AND sc.datetime <= ' + rmysql.escape(end) : '')
         , ' ORDER BY sc.datetime'
@@ -275,25 +277,31 @@ module.exports = function(app) {
       return;
     }
 
-    console.log("provider " + data)
-    var classObj = {};
-    var bodyObj = req.body;
-
-    classObj.classId = req.body.classId;
-    classObj.datetime = req.body.datetime;
-    (req.body.price ? classObj.price = req.body.price : classObj.price = "price");
-    (req.body.spots ? classObj.spots = req.body.spots : classObj.spots = "spots");
-    (req.body.name ? classObj.name = req.body.name : classObj.name = "name");
-    (req.body.instructor ? req.body.instructor = classObj.instructor : classObj.instructor = "instructor");
-    (req.body.image ? classObj.image = req.body.image : classObj.image = "image");
-    (req.body.daypass ? classObj.daypass = req.body.daypass : classObj.daypass = "daypass");
-    (req.body.desc ? classObj.desc = req.body.desc : classObj.desc = "`desc`");
+    for (var key in req.body) {
+      if (req.body.hasOwnProperty(key)) {
+        if (req.body[key] == '') {
+          req.body[key] = undefined;
+        }
+      }
+    }
+    
+    var classObj = extend(true, {}, {
+      price: 'price',
+      spots: 'spots',
+      name : 'name',
+      instructor: 'instructor',
+      image: 'image',
+      daypass: 'daypass',
+      desc: '`desc`'
+    }, req.body);
+    
+    classObj.classid = req.body.classid;
 
     var statement = [
         'INSERT INTO scheduledClass '
       , '(classid,datetime,active,price,providerid,spots,name,instructor,image,daypass,`desc`) '
       , 'SELECT ' + [
-           wmysql.escape(classObj.classId),
+           wmysql.escape(classObj.classid),
            wmysql.escape(classObj.datetime),
            '1',
             classObj.price,
@@ -311,9 +319,9 @@ module.exports = function(app) {
       if(err) {
         res.send(400,'{"status": "failed", "message": "insert of scheduled class record failed: ' + err + '"}');
       } else {
-        bodyObj.id = result.insertId;
+        req.body.id = result.insertId;
         memcached.setMemScheduledClass(classObj.id,function(err, scData) { });
-        res.send( bodyObj );
+        res.send( req.body );
       }
     }); 
   });

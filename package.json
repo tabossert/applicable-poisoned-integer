@@ -6,6 +6,7 @@
     "start": "node app"
   },
   "dependencies": {
+    "node.extend": "~0.0.1",
     "express": "3.3.5",
     "connect": "2.8.5", 
     "mysql": "2.0.0-alpha8",
