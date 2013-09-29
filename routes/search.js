@@ -23,17 +23,18 @@ var amysql = dbConn.amysql;
 
 module.exports = function(app) {
 
-   /*es.indexProvider(22,function(err, obj) {
+   /*es.indexClass(122,function(err, obj) {
     console.log(err);
     console.log(obj);
-   });
+   });*/
+  
 
-   keywords = ['yoga'];
+   keywords = 'trim';
   
    es.search(keywords,'1',37.88,-122.05,function(err,data) {
     console.log(err);
     console.log(data.hits[0]._source)
-   });*/
+   });
 
     // Route returns providers using zip or state.  This would be used on the home page before signup
     app.get('/api/gymSearch/:type/:value/:state', function(req, res){
