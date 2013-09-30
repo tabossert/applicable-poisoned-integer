@@ -27,6 +27,9 @@
     "js-yaml": "2.1.0",
     "memcached": "0.2.5",
     "elasticsearch": "0.3.12",
+    "mysql-model": "0.0.2",
+    "backbone": "1.0.0",
+    "underscore": "1.5.2",
     "grunt-deployments": "0.1.5"
   }
 }
