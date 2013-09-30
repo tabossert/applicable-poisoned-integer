@@ -2,6 +2,14 @@
  * User based routes
  */
 
+
+/**
+* TODO
+* - Build auth middleware
+* - Build additional models
+* - convert calls to using new controllers
+*/
+
 var config = config = require('config')
   , moment = require('moment')
   , crypto = require('crypto')
@@ -22,20 +30,48 @@ var stripe = require('stripe')(stripeKey);
 var dbConn = require('../lib/mysqlConn');
 var rmysql = dbConn.rmysql;
 var wmysql = dbConn.wmysql;
-var amysql = dbConn.amysql;
+
+var userModel = require('../modelControllers/userController');
 
 module.exports = function(app) {
+    var obj = {};
+    obj.id = 49;
+
+    var savObj = {};
+      //savObj.email = 'jeas@gmail.com';
+      savObj.first_name = 'James';
+      savObj.last_name = 'dass';
+      savObj.city = 'Grawn';
+      savObj.id = 49;
+      /*savObj.address = '3701 Count Road 633';
+      savObj.city = 'Grawn';
+      savObj.state = 'MI';
+      savObj.zipcode = '94596';
+      savObj.phone = '8057982850';
+      savObj.sex = 'm';*/
+
+    /*userModel.readUser(obj,function(err, data) {
+      console.log(err);
+      console.log(data);
+    });*/
+
+    /*userModel.updateUser(savObj, function(err, result) {
+      console.log(result);
+      userModel.readUser(obj,function(err, data) {
+        console.log(err);
+        console.log(data);
+      })
+    });*/
+
 
     app.post('/api/userSignup/', function(req, res){
       try {
         engageAPI.authInfo(req.header('token'), true, function(err, data) {
           if(err) {
-            console.log('ERROR: ' + err.message);
-            res.end('[{"status": "invalidToken"}]',401);
+            res.send('{"status": "failed", "message": "invalid token"}');
             return;
           } else {
             try {
-              console.log(data.profile.email);
               wmysql.query('SELECT id AS uid,email FROM users WHERE email = AES_ENCRYPT("' + data.profile.email + '","' + salt + '")', function(err, result, fields) {
                 require('crypto').randomBytes(48, function(ex, buf) {
                   var token = buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-');
@@ -113,12 +149,12 @@ module.exports = function(app) {
             res.end('{"status": "failed", "message":"' + e.message + '"}');
             return;
         }
-        rmysql.query('SELECT balance FROM users WHERE `' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')), function(err, result, fields) {
-            if (err || result.length < 1) {
-                res.send('{"status": "failed", "message": "invalid token"}',401);
-            } else {
-                res.send(result);
-            }
+        var obj = {};
+        obj.id = 49;
+
+        userModel.readUser(obj, function(err, result) {
+          console.log(err);
+          console.log(result);
         });
     });
 
@@ -237,97 +273,4 @@ module.exports = function(app) {
         }
       });
     });
-
-
-    // Route to register users from Coming Soon Page
-    app.post('/api/registerUser/', function(req, res){
-      try {
-        check(req.body.zipcode).isNumeric();
-        check(req.body.email).isEmail()
-      } catch (e) {
-        res.end('{"status": "failed", "message":"Invalid email or zipcode"}');
-        return;
-      }
-      rmysql.query('SELECT count(email) AS count FROM registration WHERE email = ' + rmysql.escape(req.body.email), function(err, result, fields) {
-        if(result[0].count > 0) {
-          res.end('{"status": "failed", "message": "You are already sign up to be notified"}');
-        } else {
-          wmysql.query('INSERT INTO registration (email,zipcode) VALUES (' + wmysql.escape(req.body.email) + ',' + wmysql.escape(req.body.zipcode) + ')', function(err, result, fields) {
-            if(err) {
-              res.end('{"status": "failed", "message": "An error occured, please try again later"}');
-            } else {
-              res.end('{"status": "success", "message": "Thanks and we will notify you when FitStew is available"}');
-            }
-          });
-        }
-      });
-    });
-
-
-    app.get('/api/getMessage/', function(req, res) {
-      try {
-        check(req.header('ltype')).isAlphanumeric();
-        check(req.header('token')).notNull();
-      } catch (e) {
-        res.end('{"status": "failed", "message":"' + e.message + '"}');
-        return;
-      }
-      rmysql.query('SELECT m.id,m.message FROM messages m INNER JOIN users u ON m.id = u.last_message WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-        if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "no new messages"}');
-        } else {
-          wmysql.query('UPDATE users SET last_message = last_message + 1 WHERE `' + req.header('ltype') + '_token` = ' + wmysql.escape(req.header('token')), function(err, result, fields) {
-            if(err || result.affectedRows < 1) {
-              res.end('{"status": "failed", "message": "unable to update last message viewed"}');
-            }
-          });
-          res.send(result);
-        }
-      });  
-    });
-
-
-    app.post('/api/newReward/', function(req, res) {
-      try {
-        check(req.body.uid).isNumeric();
-      } catch (e) {
-        res.end('{"status": "failed", "message":"' + e.message + '"}');
-        return;
-      }
-      if(req.body.network == 'facebook' || req.body.network == 'twitter') {
-        rmysql.query('INSERT INTO rewards (userid,network,timestamp) VALUES(' + req.body.uid + ',"' + req.body.network + '",NOW())', function(err, result, fields) {
-          if(err || result.length < 1) {
-            res.end('{"status": "failed", "message":"Already Applied"}');
-          } else {
-            res.end('{"status": "success"}');
-          }
-        });
-      } else {
-        res.end('{"status": "failed", "message":"Not a valid network"}')
-      }
-    });
-
-    /*app.post('/api/userCheckin/', function(req, res){
-      try {
-        check(req.body.phone).len(10,10).isNumeric()
-        check(req.body.gymid).isNumeric()
-        check(req.body.pincode).isAlphanumeric(); 
-        check(req.body.datetime).regex(/[0-9]{4}-[0-9]{1,2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9][0-9]/i) 
-      } catch (e) {
-        res.end('{"status": "failed", "message":"' + e.message + '"}');
-        return;
-      }
-      wmysql.query('call checkin(' + req.body.phone + ',"' + req.body.pincode + '",' + req.body.gymid + ',"' + req.body.datetime + '")', function(err, result, fields) {
-        if(err || result.length < 1) {
-          res.end('{"status": "failed", "message": "checkin failed"}');
-        } else {
-          if(result[0][0].transMess != "success") {
-            res.end('{"status": "failed", "message": "' + result[0][0].transMess + '"}');
-          } else {
-            res.end('{"status": "success"}');
-          }
-        }
-      });    
-    });*/
-
 }
