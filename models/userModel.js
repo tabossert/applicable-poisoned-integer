@@ -12,6 +12,12 @@ var User = MyAppModel.extend({
     tableName: "users"
 });
 
+var Refill = MyAppModel.extend({
+    tableName: "refill"
+});
+
+
 module.exports = {
-	User: User
+	User: User,
+    Refill: Refill
 }
