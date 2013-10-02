@@ -132,12 +132,12 @@ module.exports = function(app) {
         return;
       }
 
-      rmysql.query('SELECT s.id,g.id AS gymid,g.name,g.image AS gymImage,s.sclassid,sc.classid AS classid,sc.service,sc.duration,sc.image,sc.datetime FROM schedule s INNER JOIN scheduledClass sc ON (s.sclassid = sc.id) INNER JOIN gyms g ON (s.gymid = g.id) INNER JOIN users u ON u.id = s.userid WHERE u.`' + req.header('ltype') + '_token` = ' + rmysql.escape(req.header('token')) + ' AND s.datetime > "' + req.body.start + '" AND s.datetime < "' + req.body.end + '" ORDER BY s.datetime', function(err, result, fields) {
-        if (err) {
-          res.end('{"status": "failed", "message": "call failed"}');
-        } else {
-          res.send(result);
+      readSchedule(req.uData, function(err, result) {
+        if(err) {
+          res.send(400,'{"status": "failed", "message":"' + err + '"}');
         }
+
+        res.send(result);
       });
     });
 

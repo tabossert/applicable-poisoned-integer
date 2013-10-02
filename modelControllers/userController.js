@@ -105,11 +105,30 @@ function updateRefill(params,callback) {
 }
 
 
+function readSchedule(params,callback) {
+  var schedule = new userModel.User({});
+
+  var statement = [
+      'SELECT s.id,p.id AS providerid,p.name,p.image,s.scheduledclassid,sc.classid,sc.name,sc.duration,sc.image,sc.datetime '
+    , 'FROM schedule s INNER JOIN scheduledClass sc ON s.scheduledclassid = sc.id INNER JOIN providers p ON s.providerid = p.id '
+    , 'WHERE s.userid = ' + params.id
+  ].join(" ");
+
+  schedule.query(statement, function(err, result) {
+    if(err) {
+      callback('no result', null);
+    }
+
+    callback(null, result);
+  });
+}
+
 module.exports = {
 	createUser: createUser,
 	readUser: readUser,
 	updateUser: updateUser,
-    createRefill: createRefill,
-    readRefill: readRefill,
-    updateRefill: updateRefill
+  createRefill: createRefill,
+  readRefill: readRefill,
+  updateRefill: updateRefill,
+  readSchedule: readSchedule
 }
