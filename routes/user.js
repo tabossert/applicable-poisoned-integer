@@ -10,7 +10,7 @@
 var config = require('config')
   , janrain = require('janrain-api')
   , check = require('validator').check
-  , sanitize = require('validator').sanitize; 
+  , sanitize = require('validator').sanitize;
 
  // API config settings
 var engageAPI = janrain(config.Janrain.Key);
