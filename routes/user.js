@@ -9,6 +9,7 @@
 
 var config = require('config')
   , janrain = require('janrain-api')
+  , errMsg = require('../lib/errMsg')
   , check = require('validator').check
   , sanitize = require('validator').sanitize;
 
@@ -56,7 +57,7 @@ module.exports = function(app) {
 
     app.put('/api/user/logout', function(req, res){
       try {
-        check(req.header('token')).notNull();
+        check(req.header('token'),errMsg.tokenErr).notNull();
       } catch (e) {
         res.end('{"status": "failed", "message":"' + e.message + '"}');
         return;
@@ -73,7 +74,7 @@ module.exports = function(app) {
 
     app.get('/api/user/:userid', [middleFinger.tokenCheck], function(req, res){
       try {
-        check(req.header('token')).notNull();
+        check(req.header('token'),errMsg.tokenErr).notNull();
       } catch (e) {
         res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
         return;
@@ -86,7 +87,7 @@ module.exports = function(app) {
 
     app.put('/api/user/:userid', [middleFinger.tokenCheck], function(req, res){
       try {
-        check(req.header('token')).notNull();
+        check(req.header('token'),errMsg.tokenErr).notNull();
       } catch (e) {
         res.send(400,'{"status": "failed", "message":"' + e.message + '"}');
         return;
@@ -107,7 +108,7 @@ module.exports = function(app) {
 
     app.del('/api/user/:userid', [middleFinger.tokenCheck], function(req, res){
       try {
-        check(req.header('token')).notNull();
+        check(req.header('token'),errMsg.tokenErr).notNull();
       } catch (e) {
         res.end(400,'{"status": "failed", "message":"' + e.message + '"}');
         return;
@@ -126,7 +127,7 @@ module.exports = function(app) {
 
     app.get('/api/user/:userid/schedule/', [middleFinger.tokenCheck], function(req, res){
       try {
-        check(req.header('token')).notNull();
+        check(req.header('token'),errMsg.tokenErr).notNull();
       } catch (e) {
         res.end('{"status": "failed", "message":"' + e.message + '"}');
         return;
@@ -144,7 +145,7 @@ module.exports = function(app) {
 
     app.get('/api/user/:userid/refill/', [middleFinger.tokenCheck], function(req, res){
       try {
-        check(req.header('token')).notNull();
+        check(req.header('token'),errMsg.tokenErr).notNull();
       } catch (e) {
         res.end('{"status": "failed", "message":"' + e.message + '"}');
         return;

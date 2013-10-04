@@ -32,12 +32,12 @@ function createEvent(params,callback) {
   });
 }
 
-function deleteEvent(params,callback) {
+function deleteEvent(scheduleid,callback) {
   var event = new eventModel.Event({});
 
   event.set('active', '0');
 
-  event.save("id=" + params.id, function(err, result) {
+  event.save("id=" + scheduleid, function(err, result) {
   	if(err) {
   		callback(err,null);
   		return;
