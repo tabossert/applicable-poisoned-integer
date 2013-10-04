@@ -10,6 +10,7 @@ var config = config = require('config')
 // API config settings
 var memcached = require('../lib/memcached');
 var middleFinger = require('../lib/middleFinger');
+var eventModel = require('../modelControllers/eventController');
 
 module.exports = function(app) {
 
@@ -17,8 +18,8 @@ module.exports = function(app) {
   //check open spots  -- return fail if class is not available or class is full
   //check if user balance - price is positive -- if not return balance too low
   //call addEvent
-
-  app.post('/api/addEvent/', [middleFinger.tokenCheck], function(req, res){
+//[middleFinger.tokenCheck],
+  app.post('/api/addEvent/', function(req, res){
     try {
       check(req.header('token')).notNull();
     } catch (e) {
@@ -30,33 +31,39 @@ module.exports = function(app) {
     memcached.isMemScheduledClass(req.body.scheduledclassid, function(err, data) {
       if(data.classInfo.spotsReserved == data.classInfo.spots) {
         res.send('{"message": "Class Full"}');
+        return;
       }
 
+      console.log(data)
       data.participants.forEach(function(participant) {
        if(participant.userid == userid) {
+         console.log(userid)
           res.send('{"message": "Already Scheduled"}');
+         return 0;
         }
       });
 
-      var balance = 0;
-      console.log(req.uData.balance);
-      var bal = balance - data.price;
+      var balance = 100;
+      //var balance = req.uData.balance;
+      var bal = balance - data.classInfo.price;
       if(bal < 0) {
         res.send('{"message": "Balance to low"}');
+        return;
       }
 
-      console.log("test")
-      //stripe.charges.create({ amount: amount, currency: 'usd', customer: result[0].cToken }, function(err,charge) {
+      //console.log(data.classInfo)
+      var eventObj = {};
+      eventObj.userid = 45;
+      eventObj.price = data.classInfo.price;
+      eventObj.scheduledclassid = data.classInfo.id;
+      eventObj.providerid = data.classInfo.providerid;
+      eventObj.datetime = '"2013-10-26 20:00:00"';
 
-    console.log('run sp')
-    /*wmysql.query('CALL addEvent(' + wmysql.escape(req.header('ltype')) + ',' + wmysql.escape(req.header('token')) + ',' + price + ',' + req.body.scid + ',' + gymid +',' + wmysql.escape(req.body.datetime) + ')', function(err, result, fields) {
-      if(err || result.affectedRows < 1) {
-        res.end('{"status": "failed", "message": "unable to add event6"}');
-      } else {
-        res.end('{' + result[0][0].transMess + '}');
-      }
-    });*/
-     // });
+      console.log('run sp')
+      eventModel.createEvent(eventObj, function(err, result) {
+        eventObj.id = result[0][0].transMess;
+        res.send(eventObj)
+      });
     });
   });
 
