@@ -6,6 +6,7 @@ applicable-poisoned-integer
 # Node.js API for FitStew #
 
 Installation steps on CentOS 6.x  (use sudo or login as root)
+-- This should be made into an Ansible script
 
 ## MySQL (MariaDB) ##
 - vim /etc/yum.repos.d/MariaDB.repo  -  add the following to this file and save
